@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { useEffect, useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
 import CodeBlock from "@/components/CodeBlock";
 import { 
   Eye, 
@@ -13,7 +14,8 @@ import {
   Maximize,
   Flag,
   Check,
-  Copy
+  Copy,
+  Trash
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -30,6 +32,7 @@ const ViewPaste = () => {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [copying, setCopying] = useState(false);
+  const queryClient = useQueryClient();
   
   const { data: paste, isLoading, error } = useQuery<Paste>({
     queryKey: [`/api/pastes/${pasteId}`],
@@ -39,6 +42,35 @@ const ViewPaste = () => {
     queryKey: [`/api/pastes/${pasteId}/related`],
     enabled: !!paste,
   });
+  
+  // Delete paste mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!pasteId) return;
+      return apiRequest(`/api/pastes/${pasteId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      toast({
+        title: "Paste deleted",
+        description: "The paste has been successfully deleted",
+        duration: 3000,
+      });
+      navigate("/");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete the paste",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const deletePaste = () => {
+    if (window.confirm("Are you sure you want to delete this paste? This action cannot be undone.")) {
+      deleteMutation.mutate();
+    }
+  };
 
   useEffect(() => {
     if (error) {
@@ -225,9 +257,19 @@ const ViewPaste = () => {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="text-gray-200 hover:text-white transition text-sm flex items-center ml-auto"
+                className="text-gray-200 hover:text-white transition text-sm flex items-center"
               >
                 <Flag className="h-4 w-4 mr-1" /> Report
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-red-400 hover:text-red-300 transition text-sm flex items-center ml-auto"
+                onClick={() => deletePaste()}
+                disabled={deleteMutation.isPending}
+              >
+                <Trash className="h-4 w-4 mr-1" /> 
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </Button>
             </div>
           </div>

@@ -118,6 +118,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a paste
+  app.delete("/api/pastes/:pasteId", async (req, res) => {
+    try {
+      const { pasteId } = req.params;
+      const paste = await storage.getPasteByPasteId(pasteId);
+      
+      if (!paste) {
+        return res.status(404).json({ message: "Paste not found" });
+      }
+      
+      await storage.deletePaste(paste.id);
+      res.json({ message: "Paste deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting paste:", error);
+      res.status(500).json({ message: "Error deleting paste" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
