@@ -1,8 +1,9 @@
 import { nanoid } from "nanoid";
+import * as schema from "@shared/schema";
 import { pastes, type Paste, type InsertPaste } from "@shared/schema";
 import { add } from "date-fns";
 import { db } from "./db";
-import { eq, asc, desc, ne, isNotNull, isNull, and, or, sql } from "drizzle-orm";
+import { eq, asc, desc, ne, isNotNull, isNull, and, or, sql, gt } from "drizzle-orm";
 
 export interface IStorage {
   createPaste(paste: Omit<Paste, "id" | "views" | "createdAt"> & { pasteId: string }): Promise<Paste>;
@@ -46,38 +47,17 @@ export class DatabaseStorage implements IStorage {
     const currentDate = new Date();
     
     try {
-      const result = await db.execute(sql`
-        SELECT 
-          id, paste_id, title, content, language, 
-          created_at, views, expires_at, author_name, 
-          tags, is_file, file_name, file_type
-        FROM pastes
-        WHERE id = ${id} AND (expires_at IS NULL OR expires_at > ${currentDate})
-      `);
+      const paste = await db.query.pastes.findFirst({
+        where: and(
+          eq(schema.pastes.id, id),
+          or(
+            isNull(schema.pastes.expiresAt),
+            gt(schema.pastes.expiresAt, currentDate)
+          )
+        )
+      });
       
-      // Type casting to handle TypeScript errors
-      const rows = result as any[];
-      
-      if (!rows || rows.length === 0) {
-        return undefined;
-      }
-      
-      const row = rows[0];
-      return {
-        id: row.id,
-        pasteId: row.paste_id,
-        title: row.title,
-        content: row.content,
-        language: row.language,
-        createdAt: row.created_at,
-        views: row.views,
-        expiresAt: row.expires_at,
-        authorName: row.author_name,
-        tags: row.tags,
-        isFile: row.is_file,
-        fileName: row.file_name,
-        fileType: row.file_type
-      } as Paste;
+      return paste || undefined;
     } catch (error) {
       console.error("[storage] Error in getPasteById:", error);
       return undefined;
@@ -88,38 +68,17 @@ export class DatabaseStorage implements IStorage {
     const currentDate = new Date();
     
     try {
-      const result = await db.execute(sql`
-        SELECT 
-          id, paste_id, title, content, language, 
-          created_at, views, expires_at, author_name, 
-          tags, is_file, file_name, file_type
-        FROM pastes
-        WHERE paste_id = ${pasteId} AND (expires_at IS NULL OR expires_at > ${currentDate})
-      `);
+      const paste = await db.query.pastes.findFirst({
+        where: and(
+          eq(schema.pastes.pasteId, pasteId),
+          or(
+            isNull(schema.pastes.expiresAt),
+            gt(schema.pastes.expiresAt, currentDate)
+          )
+        )
+      });
       
-      // Type casting to handle TypeScript errors
-      const rows = result as any[];
-      
-      if (!rows || rows.length === 0) {
-        return undefined;
-      }
-      
-      const row = rows[0];
-      return {
-        id: row.id,
-        pasteId: row.paste_id,
-        title: row.title,
-        content: row.content,
-        language: row.language,
-        createdAt: row.created_at,
-        views: row.views,
-        expiresAt: row.expires_at,
-        authorName: row.author_name,
-        tags: row.tags,
-        isFile: row.is_file,
-        fileName: row.file_name,
-        fileType: row.file_type
-      } as Paste;
+      return paste || undefined;
     } catch (error) {
       console.error("[storage] Error in getPasteByPasteId:", error);
       return undefined;
@@ -128,11 +87,9 @@ export class DatabaseStorage implements IStorage {
 
   async incrementViews(id: number): Promise<void> {
     try {
-      await db.execute(sql`
-        UPDATE pastes 
-        SET views = views + 1 
-        WHERE id = ${id}
-      `);
+      await db.update(schema.pastes)
+        .set({ views: sql`views + 1` })
+        .where(eq(schema.pastes.id, id));
     } catch (error) {
       console.error("[storage] Error in incrementViews:", error);
     }
@@ -142,39 +99,18 @@ export class DatabaseStorage implements IStorage {
     const currentDate = new Date();
     
     try {
-      // Use direct SQL to avoid column name issues
-      const result = await db.execute(sql`
-        SELECT 
-          id, paste_id, title, content, language, 
-          created_at, views, expires_at, author_name, 
-          tags, is_file, file_name, file_type
-        FROM pastes
-        WHERE expires_at IS NULL OR expires_at > ${currentDate}
-        ORDER BY created_at DESC
-        LIMIT ${limit}
-      `);
+      // Use Drizzle ORM to fetch the data
+      const pastes = await db.query.pastes.findMany({
+        where: or(
+          isNull(schema.pastes.expiresAt),
+          gt(schema.pastes.expiresAt, currentDate)
+        ),
+        orderBy: [desc(schema.pastes.createdAt)],
+        limit: limit,
+      });
       
-      // Type casting to handle TypeScript errors
-      const rows = result as any[];
-      
-      console.log("[storage] Successfully fetched recent pastes:", rows.length);
-      
-      // Map the results to Paste objects
-      return rows.map(row => ({
-        id: row.id,
-        pasteId: row.paste_id,
-        title: row.title,
-        content: row.content,
-        language: row.language,
-        createdAt: row.created_at,
-        views: row.views,
-        expiresAt: row.expires_at,
-        authorName: row.author_name,
-        tags: row.tags,
-        isFile: row.is_file,
-        fileName: row.file_name,
-        fileType: row.file_type
-      } as Paste));
+      console.log("[storage] Successfully fetched recent pastes:", pastes.length);
+      return pastes;
     } catch (error) {
       console.error("[storage] Error in getRecentPastes:", error);
       // Return empty array to avoid breaking the application
@@ -186,40 +122,28 @@ export class DatabaseStorage implements IStorage {
     const currentDate = new Date();
     
     try {
-      // Use direct SQL to avoid column name issues
-      const whereClause = excludeId 
-        ? sql`language = ${language} AND (expires_at IS NULL OR expires_at > ${currentDate}) AND id != ${excludeId}`
-        : sql`language = ${language} AND (expires_at IS NULL OR expires_at > ${currentDate})`;
+      // Use Drizzle ORM to fetch the data
+      const whereConditions = [
+        eq(schema.pastes.language, language),
+        or(
+          isNull(schema.pastes.expiresAt),
+          gt(schema.pastes.expiresAt, currentDate)
+        )
+      ];
       
-      const result = await db.execute(sql`
-        SELECT 
-          id, paste_id, title, content, language, 
-          created_at, views, expires_at, author_name, 
-          tags, is_file, file_name, file_type
-        FROM pastes
-        WHERE ${whereClause}
-        ORDER BY views DESC
-        LIMIT ${limit}
-      `);
+      // Add excludeId condition if provided
+      if (excludeId !== undefined) {
+        whereConditions.push(ne(schema.pastes.id, excludeId));
+      }
       
-      console.log("[storage] Successfully fetched related pastes:", result.length);
+      const relatedPastes = await db.query.pastes.findMany({
+        where: and(...whereConditions),
+        orderBy: [desc(schema.pastes.views)],
+        limit: limit,
+      });
       
-      // Map the results to Paste objects
-      return result.map(row => ({
-        id: row.id,
-        pasteId: row.paste_id,
-        title: row.title,
-        content: row.content,
-        language: row.language,
-        createdAt: row.created_at,
-        views: row.views,
-        expiresAt: row.expires_at,
-        authorName: row.author_name,
-        tags: row.tags,
-        isFile: row.is_file,
-        fileName: row.file_name,
-        fileType: row.file_type
-      } as Paste));
+      console.log("[storage] Successfully fetched related pastes:", relatedPastes.length);
+      return relatedPastes;
     } catch (error) {
       console.error("[storage] Error in getRelatedPastes:", error);
       return [];
@@ -228,10 +152,8 @@ export class DatabaseStorage implements IStorage {
 
   async deletePaste(id: number): Promise<void> {
     try {
-      await db.execute(sql`
-        DELETE FROM pastes 
-        WHERE id = ${id}
-      `);
+      await db.delete(schema.pastes)
+        .where(eq(schema.pastes.id, id));
     } catch (error) {
       console.error("[storage] Error in deletePaste:", error);
     }
