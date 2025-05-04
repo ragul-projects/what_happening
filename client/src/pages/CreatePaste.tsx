@@ -127,25 +127,28 @@ const CreatePaste = () => {
                           placeholder="Paste your code here..."
                           className="min-h-[300px] font-mono text-sm bg-gray-700 border-gray-600 text-gray-200"
                           {...field}
-                          onChange={async (e) => {
-                            // Only proceed with change if admin password is provided and correct
-                            if (field.value && e.target.value !== field.value) {
-                              const isAdmin = await verifyAdmin();
-                              if (isAdmin) {
-                                field.onChange(e);
-                              } else {
-                                // Reset to previous value if not admin
-                                e.target.value = field.value;
-                                toast({
-                                  title: "Access Denied",
-                                  description: "Only admins can modify content in text boxes",
-                                  variant: "destructive",
-                                });
-                              }
-                            } else {
-                              // Initial input (when field is empty) doesn't require validation
-                              field.onChange(e);
+                          onFocus={async (e) => {
+                            // Check for admin status when the textarea is focused
+                            if (!field.value) {
+                              // Allow initial input (first-time focus)
+                              return;
                             }
+                            
+                            // Only require admin for editing existing content
+                            const isAdmin = await verifyAdmin();
+                            if (!isAdmin) {
+                              // If not admin, blur the field and show message
+                              e.target.blur();
+                              toast({
+                                title: "Access Denied",
+                                description: "Only admins can modify content in text boxes",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          onChange={(e) => {
+                            // Already verified admin status on focus if needed
+                            field.onChange(e);
                           }}
                         />
                       </FormControl>

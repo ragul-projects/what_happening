@@ -14,7 +14,11 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  // Check localStorage for existing admin status on initialization
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    const storedAdmin = localStorage.getItem('isAdmin');
+    return storedAdmin === 'true';
+  });
   const { toast } = useToast();
 
   const login = (password: string): boolean => {

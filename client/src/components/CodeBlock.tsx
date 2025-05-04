@@ -53,12 +53,10 @@ const CodeBlock = ({
     }
   };
 
-  const handleTextareaChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-    // Only prompt for admin password if there's an actual change 
-    if (editableCode !== newValue) {
-      setEditableCode(newValue);
-    }
+    // Since this is only accessible after admin verification, directly update the value
+    setEditableCode(newValue);
   };
 
   const saveChanges = () => {

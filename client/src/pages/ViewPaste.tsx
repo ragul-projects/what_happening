@@ -297,27 +297,27 @@ const ViewPaste = () => {
                 placeholder="Add a comment..."
                 className="w-full bg-gray-700 text-gray-200 border border-gray-700 rounded p-3 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 rows={3}
-                onChange={async (e) => {
-                  // If the textarea already has content and is being modified, require admin authentication
-                  if (comment && e.target.value !== comment) {
-                    const isAdmin = await verifyAdmin();
-                    if (isAdmin) {
-                      setComment(e.target.value);
-                    } else {
-                      // Reset to previous value if not admin
-                      if (commentRef.current) {
-                        commentRef.current.value = comment;
-                      }
-                      toast({
-                        title: "Access Denied",
-                        description: "Only admins can modify text in comment boxes",
-                        variant: "destructive",
-                      });
-                    }
-                  } else {
-                    // Initial input when empty doesn't require validation
-                    setComment(e.target.value);
+                onFocus={async (e) => {
+                  // Check for admin status when the textarea is focused
+                  if (!comment) {
+                    // Allow initial input (first-time focus)
+                    return;
                   }
+                  
+                  const isAdmin = await verifyAdmin();
+                  if (!isAdmin) {
+                    // If not admin, blur the field and show message
+                    e.target.blur();
+                    toast({
+                      title: "Access Denied",
+                      description: "Only admins can modify text in comment boxes",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                onChange={(e) => {
+                  // We've already checked for admin status on focus
+                  setComment(e.target.value);
                 }}
               />
             </div>
