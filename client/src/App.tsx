@@ -5,6 +5,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import ViewPaste from "@/pages/ViewPaste";
 import CreatePaste from "@/pages/CreatePaste";
+import Explore from "@/pages/Explore";
+import LanguagePage from "@/pages/LanguagePage";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
@@ -15,6 +17,9 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/paste/:pasteId" component={ViewPaste} />
       <Route path="/create" component={CreatePaste} />
+      <Route path="/explore" component={Explore} />
+      <Route path="/language/:language" component={LanguagePage} />
+      <Route path="/raw/:pasteId" component={ViewPaste} /> {/* For now, reuse ViewPaste */}
       <Route path="/:rest*" component={NotFound} />
     </Switch>
   );
