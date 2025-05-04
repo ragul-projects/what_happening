@@ -1,0 +1,16 @@
+age,gender,height,weight,bmi,activity_level,calories,protein,carbs,fat,target
+34,M,180,75,23.15,Moderate,2200,150,225,75,Maintenance
+29,F,165,60,22.04,High,2000,120,220,65,Muscle gain
+45,M,175,90,29.39,Low,1800,130,180,60,Weight loss
+22,F,170,58,20.07,Moderate,1950,110,225,64,Maintenance
+38,M,182,88,26.57,High,2400,160,240,80,Muscle gain
+42,F,160,65,25.39,Moderate,1750,120,170,58,Weight loss
+27,M,178,72,22.72,Very high,2600,180,260,70,Muscle gain
+31,F,168,62,21.97,Low,1650,100,170,55,Weight loss
+55,M,176,82,26.47,Moderate,1900,140,190,63,Weight loss
+25,F,163,55,20.70,High,2050,125,230,68,Maintenance
+41,M,179,78,24.34,Low,1850,135,185,62,Maintenance
+36,F,172,68,22.99,Moderate,1850,115,200,62,Maintenance
+48,M,174,86,28.41,Low,1750,130,175,58,Weight loss
+23,F,166,59,21.41,High,2100,130,235,70,Muscle gain
+39,M,181,84,25.64,Moderate,2100,145,210,70,Maintenance

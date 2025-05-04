@@ -234,16 +234,16 @@ const ViewPaste = () => {
                 )}
               </Button>
               <Button 
-                variant={paste.isFile && paste.fileType === 'excel' ? "default" : "ghost"}
+                variant={paste.isFile && paste.fileType === 'csv' ? "default" : "ghost"}
                 size="sm"
-                className={paste.isFile && paste.fileType === 'excel' 
+                className={paste.isFile && paste.fileType === 'csv' 
                   ? "bg-blue-600 hover:bg-blue-700 text-white transition text-sm flex items-center"
                   : "text-gray-200 hover:text-white transition text-sm flex items-center"
                 }
                 onClick={downloadPaste}
               >
                 <Download className="h-4 w-4 mr-1" /> 
-                {paste.isFile && paste.fileType === 'excel' ? 'Download Excel' : 'Download'}
+                {paste.isFile && paste.fileType === 'csv' ? 'Download CSV' : 'Download'}
               </Button>
               <Button 
                 variant="ghost" 

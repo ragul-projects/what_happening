@@ -1,0 +1,17 @@
+model_name,algorithm,accuracy,precision,recall,f1_score,training_time_seconds,dataset_size,feature_count
+RandomForest1,Random Forest,0.92,0.89,0.94,0.91,123.5,10000,15
+LogisticReg1,Logistic Regression,0.85,0.83,0.86,0.84,45.2,10000,15
+SVM1,Support Vector Machine,0.88,0.86,0.89,0.87,189.7,10000,15
+KNN1,K-Nearest Neighbors,0.82,0.80,0.83,0.81,67.3,10000,15
+DecisionTree1,Decision Tree,0.78,0.75,0.80,0.77,35.8,10000,15
+XGBoost1,XGBoost,0.94,0.93,0.94,0.93,156.4,10000,15
+RandomForest2,Random Forest,0.90,0.88,0.91,0.89,245.8,20000,15
+LogisticReg2,Logistic Regression,0.83,0.81,0.84,0.82,89.6,20000,15
+SVM2,Support Vector Machine,0.85,0.84,0.86,0.85,356.7,20000,15
+XGBoost2,XGBoost,0.92,0.91,0.93,0.92,312.5,20000,15
+RandomForest3,Random Forest,0.88,0.86,0.90,0.88,187.3,10000,25
+LogisticReg3,Logistic Regression,0.80,0.78,0.82,0.80,67.4,10000,25
+SVM3,Support Vector Machine,0.82,0.80,0.84,0.82,275.6,10000,25
+XGBoost3,XGBoost,0.91,0.89,0.92,0.90,234.8,10000,25
+NeuralNet1,Neural Network,0.93,0.92,0.93,0.92,456.7,20000,25
+NeuralNet2,Neural Network,0.95,0.94,0.95,0.94,789.3,30000,25
