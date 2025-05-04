@@ -25,7 +25,9 @@ export class DatabaseStorage implements IStorage {
         language: pasteData.language || "plaintext",
         expiresAt: pasteData.expiresAt,
         authorName: pasteData.authorName || "Anonymous",
-        tags: pasteData.tags || [],
+        isFile: pasteData.isFile || false,
+        fileName: pasteData.fileName || null,
+        fileType: pasteData.fileType || null,
       })
       .returning();
     
@@ -150,7 +152,9 @@ print("Average age by city:")
 print(by_city)`,
       language: "python",
       authorName: "DataAnalyst",
-      tags: ["python", "pandas", "data-analysis"],
+      isFile: false,
+      fileName: null,
+      fileType: null,
       expiresAt: add(new Date(), { days: 30 }),
     };
     
@@ -187,7 +191,9 @@ const allPositive = numbers.every(num => num > 0);
 console.log('All positive:', allPositive);`,
       language: "javascript",
       authorName: "JSdev",
-      tags: ["javascript", "arrays", "web-development"],
+      isFile: false,
+      fileName: null,
+      fileType: null,
       expiresAt: add(new Date(), { days: 30 }),
     };
     
@@ -236,7 +242,9 @@ for i, importance in enumerate(feature_importances):
     print(f"Feature {iris.feature_names[i]}: {importance:.4f}")`,
       language: "python",
       authorName: "MLEngineer",
-      tags: ["python", "machine-learning", "scikit-learn", "data-science"],
+      isFile: false,
+      fileName: null,
+      fileType: null,
       expiresAt: add(new Date(), { days: 30 }),
     };
     
@@ -291,7 +299,9 @@ plt.grid(True, axis='y', linestyle='--', alpha=0.7)
 plt.show()`,
       language: "python",
       authorName: "DataViz",
-      tags: ["python", "data-visualization", "matplotlib", "plotting"],
+      isFile: false,
+      fileName: null,
+      fileType: null,
       expiresAt: add(new Date(), { days: 30 }),
     };
     
@@ -327,7 +337,9 @@ conf_matrix = confusion_matrix(y_pred, y_pred, output_dict=True)
 print(f"Accuracy: {mean_accuracy:.2f}")`,
       language: "python",
       authorName: "Anonymous",
-      tags: ["python", "pandas", "data-analysis", "scikit-learn", "machine-learning", "statistics"],
+      isFile: false,
+      fileName: null,
+      fileType: null,
       views: 147,
       expiresAt: null,
     };
