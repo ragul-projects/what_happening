@@ -33,6 +33,23 @@ const CreatePaste = () => {
   const [activeTab, setActiveTab] = useState<string>("code");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handle tab changes and reset content appropriately
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Clear content when switching between tabs
+    if (value === "code") {
+      if (selectedFile) {
+        // If coming back to code tab from file tab with a file selected, reset content
+        form.setValue("content", "");
+      }
+    } else if (value === "file") {
+      // When switching to file tab with no file, clear any code content
+      if (!selectedFile) {
+        form.setValue("content", "");
+      }
+    }
+  };
 
   const form = useForm<CreatePasteFormValues>({
     resolver: zodResolver(formSchema),
@@ -90,10 +107,17 @@ const CreatePaste = () => {
       fileInputRef.current.value = "";
     }
     
+    // Clear all file-related fields
     form.setValue("isFile", false);
     form.setValue("fileName", "");
     form.setValue("fileType", "");
     form.setValue("content", "");
+    form.setValue("language", "plaintext");  // Reset to plaintext
+    
+    // Reset title if it was set from the file name
+    if (form.getValues("title") === form.getValues("fileName")?.replace(/\.csv$/i, '')) {
+      form.setValue("title", "");
+    }
   };
 
   const createPasteMutation = useMutation({
@@ -138,7 +162,7 @@ const CreatePaste = () => {
             <CardTitle className="text-2xl font-bold text-white">Create New Paste</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="code" onValueChange={setActiveTab} value={activeTab}>
+            <Tabs defaultValue="code" onValueChange={handleTabChange} value={activeTab}>
               <TabsList className="mb-6 bg-gray-700">
                 <TabsTrigger value="code" className="data-[state=active]:bg-blue-600">Code Paste</TabsTrigger>
                 <TabsTrigger value="file" className="data-[state=active]:bg-blue-600">CSV File Upload</TabsTrigger>
