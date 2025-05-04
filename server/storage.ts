@@ -96,19 +96,26 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getRecentPastes(limit: number = 15): Promise<Paste[]> {
+  async getRecentPastes(limit?: number): Promise<Paste[]> {
     const currentDate = new Date();
     
     try {
       // Use Drizzle ORM to fetch the data
-      const pastes = await db.query.pastes.findMany({
+      // Create query options
+      const queryOptions: any = {
         where: or(
           isNull(schema.pastes.expiresAt),
           gt(schema.pastes.expiresAt, currentDate)
         ),
-        orderBy: [desc(schema.pastes.createdAt)],
-        limit: limit,
-      });
+        orderBy: [desc(schema.pastes.createdAt)]
+      };
+      
+      // Only add limit if provided
+      if (limit !== undefined) {
+        queryOptions.limit = limit;
+      }
+      
+      const pastes = await db.query.pastes.findMany(queryOptions);
       
       console.log("[storage] Successfully fetched recent pastes:", pastes.length);
       return pastes;
