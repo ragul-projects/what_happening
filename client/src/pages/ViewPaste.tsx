@@ -15,7 +15,8 @@ import {
   Flag,
   Check,
   Copy,
-  Trash
+  Trash,
+  Edit
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
