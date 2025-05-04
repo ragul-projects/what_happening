@@ -5,8 +5,8 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-// Use Neon Database URL if available, otherwise use the default DATABASE_URL
-const databaseUrl = process.env.DATABASE_URL;
+// Use the provided Neon DB URL
+const databaseUrl = "postgresql://neondb_owner:npg_SbHyI6cdZnU5@ep-wispy-cloud-a4f57e4w-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require";
 
 if (!databaseUrl) {
   throw new Error(
@@ -14,7 +14,7 @@ if (!databaseUrl) {
   );
 }
 
-console.log("Connecting to database...");
+console.log("Connecting to Neon database...");
 export const pool = new Pool({ connectionString: databaseUrl });
 
 // Debug queries
