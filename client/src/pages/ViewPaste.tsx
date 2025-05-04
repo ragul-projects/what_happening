@@ -112,29 +112,19 @@ export default function ViewPaste() {
         adminPassword: adminPasswordInput
       });
     },
-    onSuccess: (response) => {
-      console.log("Update success response:", response);
-      
-      // Check if we received the updated paste in the response
-      if (response.paste) {
-        console.log("Got updated paste directly:", response.paste);
-        
-        // Update the paste data directly in the cache
-        queryClient.setQueryData([`/api/pastes/${pasteId}`], response.paste);
-        
-        // Set the current paste state immediately
-        setPaste(response.paste);
-      } else {
-        // Fall back to refetching the paste
-        console.log("Refetching paste data");
-        queryClient.invalidateQueries({ queryKey: [`/api/pastes/${pasteId}`] });
-      }
+    onSuccess: () => {
+      console.log("Update success, forcing full reload");
       
       toast({
         title: "Paste updated",
-        description: "The paste has been successfully updated",
-        duration: 3000,
+        description: "Reloading to display updated content",
+        duration: 2000,
       });
+      
+      // Force a complete page reload to get fresh data from the server
+      setTimeout(() => {
+        window.location.href = window.location.href;
+      }, 1000);
       
       setIsEditing(false);
     },
