@@ -113,10 +113,10 @@ const ViewPaste = () => {
     
     const element = document.createElement('a');
     
-    // Check if this is a file (particularly XML)
-    if (paste.isFile && paste.fileName && paste.fileType === 'xml') {
-      // For XML files, use the original filename if available
-      const file = new Blob([paste.content], { type: 'application/xml' });
+    // Check if this is a file (particularly Excel)
+    if (paste.isFile && paste.fileName && paste.fileType === 'excel') {
+      // For Excel files, use the original filename if available
+      const file = new Blob([paste.content], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       element.href = URL.createObjectURL(file);
       element.download = paste.fileName;
     } else {
@@ -192,8 +192,8 @@ const ViewPaste = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <h1 className="text-xl font-semibold text-white mb-2 md:mb-0">
                 {paste.title}
-                {paste.isFile && paste.fileName && paste.fileType === 'xml' && (
-                  <Badge className="ml-2 bg-blue-600 text-white">XML File</Badge>
+                {paste.isFile && paste.fileName && paste.fileType === 'excel' && (
+                  <Badge className="ml-2 bg-blue-600 text-white">Excel File</Badge>
                 )}
               </h1>
               <div className="flex items-center space-x-2">
@@ -234,16 +234,16 @@ const ViewPaste = () => {
                 )}
               </Button>
               <Button 
-                variant={paste.isFile && paste.fileType === 'xml' ? "default" : "ghost"}
+                variant={paste.isFile && paste.fileType === 'excel' ? "default" : "ghost"}
                 size="sm"
-                className={paste.isFile && paste.fileType === 'xml' 
+                className={paste.isFile && paste.fileType === 'excel' 
                   ? "bg-blue-600 hover:bg-blue-700 text-white transition text-sm flex items-center"
                   : "text-gray-200 hover:text-white transition text-sm flex items-center"
                 }
                 onClick={downloadPaste}
               >
                 <Download className="h-4 w-4 mr-1" /> 
-                {paste.isFile && paste.fileType === 'xml' ? 'Download XML' : 'Download'}
+                {paste.isFile && paste.fileType === 'excel' ? 'Download Excel' : 'Download'}
               </Button>
               <Button 
                 variant="ghost" 
