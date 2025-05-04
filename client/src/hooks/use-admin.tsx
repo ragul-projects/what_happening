@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useToast } from './use-toast';
+import { apiRequest } from '../lib/queryClient';
 
-// Hardcoded admin password - in a real app, this would be handled on the server
-const ADMIN_PASSWORD = 'kit@123'; // Must be exactly this value
+// Admin authentication will be handled via API call to the server
+// The actual password is stored in an environment variable
 
 interface AdminContextType {
   isAdmin: boolean;
-  login: (password: string) => boolean;
+  login: (password: string) => Promise<boolean>;
   logout: () => void;
   verifyAdmin: () => Promise<boolean>;
 }
@@ -21,9 +22,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   });
   const { toast } = useToast();
 
-  const login = (password: string): boolean => {
-    // Make sure we're doing an exact match
-    if (password === ADMIN_PASSWORD) {
+  const verifyPassword = async (password: string): Promise<boolean> => {
+    try {
+      const response = await apiRequest('POST', '/api/admin/verify', { password });
+      const data = await response.json();
+      return data.success;
+    } catch (error) {
+      console.error('Admin verification error:', error);
+      return false;
+    }
+  };
+
+  const login = async (password: string): Promise<boolean> => {
+    const isAuthenticated = await verifyPassword(password);
+    
+    if (isAuthenticated) {
       setIsAdmin(true);
       localStorage.setItem('isAdmin', 'true');
       return true;
@@ -50,8 +63,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     // If password is null (user clicked cancel) or empty, return false
     if (!password) return false;
     
-    // Direct check for the specific password
-    if (password === ADMIN_PASSWORD) {
+    // Verify password via API
+    const isAuthenticated = await verifyPassword(password);
+    
+    if (isAuthenticated) {
       setIsAdmin(true);
       localStorage.setItem('isAdmin', 'true');
       return true;

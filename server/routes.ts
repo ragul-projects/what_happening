@@ -135,6 +135,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error deleting paste" });
     }
   });
+  
+  // Admin authentication endpoint
+  app.post("/api/admin/verify", (req, res) => {
+    try {
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ success: false, message: "Password is required" });
+      }
+      
+      // Check against environment variable
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      
+      if (!adminPassword) {
+        console.error("ADMIN_PASSWORD environment variable is not set");
+        return res.status(500).json({ success: false, message: "Server configuration error" });
+      }
+      
+      const isAuthenticated = password === adminPassword;
+      
+      return res.json({ 
+        success: isAuthenticated,
+        message: isAuthenticated ? "Authentication successful" : "Authentication failed" 
+      });
+    } catch (error) {
+      console.error("Admin authentication error:", error);
+      res.status(500).json({ success: false, message: "Authentication error" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
