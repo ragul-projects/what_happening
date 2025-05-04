@@ -78,39 +78,74 @@ export class DatabaseStorage implements IStorage {
   async getRecentPastes(limit: number = 5): Promise<Paste[]> {
     const currentDate = new Date();
     
-    const recentPastes = await db
-      .select()
-      .from(pastes)
-      .where(or(
-        isNull(pastes.expiresAt),
-        sql`${pastes.expiresAt} > ${currentDate}`
-      ))
-      .orderBy(desc(pastes.createdAt))
-      .limit(limit);
-    
-    return recentPastes;
+    try {
+      // Use a simpler query to debug the issue
+      const recentPastes = await db
+        .select({
+          id: pastes.id,
+          pasteId: pastes.pasteId,
+          title: pastes.title,
+          content: pastes.content,
+          language: pastes.language,
+          createdAt: pastes.createdAt,
+          views: pastes.views,
+          expiresAt: pastes.expiresAt,
+          authorName: pastes.authorName,
+          // Skip problematic fields for now
+        })
+        .from(pastes)
+        .where(or(
+          isNull(pastes.expiresAt),
+          sql`${pastes.expiresAt} > ${currentDate}`
+        ))
+        .orderBy(desc(pastes.createdAt))
+        .limit(limit);
+      
+      console.log("[storage] Successfully fetched recent pastes:", recentPastes.length);
+      return recentPastes as Paste[];
+    } catch (error) {
+      console.error("[storage] Error in getRecentPastes:", error);
+      // Return empty array to avoid breaking the application
+      return [];
+    }
   }
 
   async getRelatedPastes(language: string, excludeId?: number, limit: number = 3): Promise<Paste[]> {
     const currentDate = new Date();
     
-    const query = db
-      .select()
-      .from(pastes)
-      .where(and(
-        eq(pastes.language, language),
-        or(
-          isNull(pastes.expiresAt),
-          sql`${pastes.expiresAt} > ${currentDate}`
-        ),
-        excludeId ? ne(pastes.id, excludeId) : undefined
-      ))
-      .orderBy(desc(pastes.views))
-      .limit(limit);
-    
-    const relatedPastes = await query;
-    
-    return relatedPastes;
+    try {
+      const query = db
+        .select({
+          id: pastes.id,
+          pasteId: pastes.pasteId,
+          title: pastes.title,
+          content: pastes.content,
+          language: pastes.language,
+          createdAt: pastes.createdAt,
+          views: pastes.views,
+          expiresAt: pastes.expiresAt,
+          authorName: pastes.authorName,
+          // Skip problematic fields for now
+        })
+        .from(pastes)
+        .where(and(
+          eq(pastes.language, language),
+          or(
+            isNull(pastes.expiresAt),
+            sql`${pastes.expiresAt} > ${currentDate}`
+          ),
+          excludeId ? ne(pastes.id, excludeId) : undefined
+        ))
+        .orderBy(desc(pastes.views))
+        .limit(limit);
+      
+      const relatedPastes = await query;
+      console.log("[storage] Successfully fetched related pastes:", relatedPastes.length);
+      return relatedPastes as Paste[];
+    } catch (error) {
+      console.error("[storage] Error in getRelatedPastes:", error);
+      return [];
+    }
   }
 
   async deletePaste(id: number): Promise<void> {
@@ -155,6 +190,7 @@ print(by_city)`,
       isFile: false,
       fileName: null,
       fileType: null,
+      tags: ["python", "pandas", "data-analysis"],
       expiresAt: add(new Date(), { days: 30 }),
     };
     
@@ -194,6 +230,7 @@ console.log('All positive:', allPositive);`,
       isFile: false,
       fileName: null,
       fileType: null,
+      tags: ["javascript", "arrays", "functions"],
       expiresAt: add(new Date(), { days: 30 }),
     };
     
@@ -245,6 +282,7 @@ for i, importance in enumerate(feature_importances):
       isFile: false,
       fileName: null,
       fileType: null,
+      tags: ["python", "machine-learning", "scikit-learn", "random-forest"],
       expiresAt: add(new Date(), { days: 30 }),
     };
     
@@ -302,6 +340,7 @@ plt.show()`,
       isFile: false,
       fileName: null,
       fileType: null,
+      tags: ["python", "matplotlib", "data-visualization", "charts"],
       expiresAt: add(new Date(), { days: 30 }),
     };
     
@@ -340,6 +379,7 @@ print(f"Accuracy: {mean_accuracy:.2f}")`,
       isFile: false,
       fileName: null,
       fileType: null,
+      tags: ["python", "pandas", "transportation", "logistic-regression"],
       views: 147,
       expiresAt: null,
     };

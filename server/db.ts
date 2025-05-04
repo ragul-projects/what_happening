@@ -18,10 +18,9 @@ console.log("Connecting to Neon database...");
 export const pool = new Pool({ connectionString: databaseUrl });
 
 // Debug queries
-const logQueryCallback = (query: string, params: any[]) => {
+const logQuery = (query: string, params: any[]) => {
   console.log('SQL Query:', query);
   console.log('Parameters:', params);
-  return { query, params };
 };
 
-export const db = drizzle({ client: pool, schema }, { logger: true });
+export const db = drizzle(pool, { schema, logger: { logQuery } });
