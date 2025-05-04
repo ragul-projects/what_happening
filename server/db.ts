@@ -6,7 +6,7 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 // Use Neon Database URL if available, otherwise use the default DATABASE_URL
-const databaseUrl = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
@@ -14,13 +14,15 @@ if (!databaseUrl) {
   );
 }
 
-console.log("Connecting to Neon database...");
+console.log("Connecting to database...");
 export const pool = new Pool({ connectionString: databaseUrl });
 
 // Debug queries
 const logQuery = (query: string, params: any[]) => {
-  console.log('SQL Query:', query);
-  console.log('Parameters:', params);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('SQL Query:', query);
+    console.log('Parameters:', params);
+  }
 };
 
 export const db = drizzle(pool, { schema, logger: { logQuery } });

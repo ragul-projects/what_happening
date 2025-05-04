@@ -17,61 +17,25 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async createPaste(pasteData: Omit<Paste, "id" | "views" | "createdAt"> & { pasteId: string }): Promise<Paste> {
     try {
-      // Use direct SQL to avoid column name issues
-      const result = await db.execute(sql`
-        INSERT INTO pastes (
-          paste_id, 
-          title, 
-          content, 
-          language, 
-          expires_at, 
-          author_name, 
-          is_file, 
-          file_name, 
-          file_type
-        ) 
-        VALUES (
-          ${pasteData.pasteId},
-          ${pasteData.title || "Untitled"},
-          ${pasteData.content},
-          ${pasteData.language || "plaintext"},
-          ${pasteData.expiresAt},
-          ${pasteData.authorName || "Anonymous"},
-          ${pasteData.isFile || false},
-          ${pasteData.fileName || null},
-          ${pasteData.fileType || null}
-        )
-        RETURNING 
-          id, paste_id, title, content, language, 
-          created_at, views, expires_at, author_name, 
-          tags, is_file, file_name, file_type
-      `);
+      // Use the drizzle ORM to insert the record
+      const inserted = await db.insert(pastes).values({
+        pasteId: pasteData.pasteId,
+        title: pasteData.title || "Untitled",
+        content: pasteData.content,
+        language: pasteData.language || "plaintext",
+        expiresAt: pasteData.expiresAt,
+        authorName: pasteData.authorName || "Anonymous",
+        isFile: pasteData.isFile || false,
+        fileName: pasteData.fileName || null,
+        fileType: pasteData.fileType || null,
+        tags: pasteData.tags || []
+      }).returning();
       
-      // Type casting to handle TypeScript errors
-      const rows = result as any[];
-      
-      if (!rows || rows.length === 0) {
+      if (!inserted || inserted.length === 0) {
         throw new Error("Failed to create paste: No rows returned");
       }
       
-      // Map the result to a Paste object
-      const paste = rows[0];
-      
-      return {
-        id: paste.id,
-        pasteId: paste.paste_id,
-        title: paste.title,
-        content: paste.content,
-        language: paste.language,
-        createdAt: paste.created_at,
-        views: paste.views,
-        expiresAt: paste.expires_at,
-        authorName: paste.author_name,
-        tags: paste.tags,
-        isFile: paste.is_file,
-        fileName: paste.file_name,
-        fileType: paste.file_type
-      } as Paste;
+      return inserted[0];
     } catch (error) {
       console.error("Error in createPaste:", error);
       throw error;
