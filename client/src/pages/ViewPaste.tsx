@@ -389,9 +389,7 @@ const ViewPaste = () => {
           ) : (
             /* Code Snippet - Only show when not editing */
             <CodeBlock
-              code={paste.isFile && paste.fileType === 'csv' ? 
-                "/* CSV data is available for download but not displayed for privacy reasons */"
-                : paste.content}
+              code={paste.content}
               language="plaintext" 
               title={paste.isFile && paste.fileType === 'csv' && paste.fileName ? (paste.fileName as string) : undefined}
               showLineNumbers={true}
