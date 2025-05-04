@@ -82,6 +82,22 @@ const CreatePaste = () => {
       return;
     }
     
+    // Check file size (limit to 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: "File Too Large",
+        description: "Maximum file size is 10MB. Please choose a smaller file.",
+        variant: "destructive",
+      });
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+    
     setSelectedFile(file);
     
     // Read file contents
@@ -135,11 +151,19 @@ const CreatePaste = () => {
       navigate(`/paste/${data.pasteId}`);
     },
     onError: (error) => {
+      let errorMessage = form.getValues("isFile") 
+        ? "Failed to upload file. Please try again." 
+        : "Failed to create paste. Please try again.";
+      
+      // Check for specific error types
+      if (error.message && error.message.includes("too large") || 
+          error.message && error.message.includes("413")) {
+        errorMessage = "File is too large. Please limit your upload to under 10MB.";
+      }
+      
       toast({
         title: "Error",
-        description: form.getValues("isFile") 
-          ? "Failed to upload file. Please try again." 
-          : "Failed to create paste. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       console.error(error);
@@ -336,7 +360,7 @@ const CreatePaste = () => {
                             <Upload className="h-12 w-12 text-gray-400 mx-auto" />
                             <div>
                               <p className="text-gray-200 font-medium">Drop your CSV file here or click to browse</p>
-                              <p className="text-gray-400 mt-1 text-sm">CSV files only (.csv)</p>
+                              <p className="text-gray-400 mt-1 text-sm">CSV files only (.csv) • Maximum size: 10MB</p>
                             </div>
                             <input
                               type="file"

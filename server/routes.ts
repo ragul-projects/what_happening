@@ -52,9 +52,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json({ pasteId: paste.pasteId });
     } catch (error) {
+      console.error("Error creating paste:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid paste data", errors: error.errors });
       }
+      
+      // Check for specific error types if necessary
+      if (error.toString().includes("PayloadTooLargeError")) {
+        return res.status(413).json({ message: "File is too large. Please upload a smaller file." });
+      }
+      
       res.status(500).json({ message: "Error creating paste" });
     }
   });
