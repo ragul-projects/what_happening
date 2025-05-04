@@ -1,0 +1,327 @@
+import { nanoid } from "nanoid";
+import { pastes, type Paste, type InsertPaste } from "@shared/schema";
+import { add } from "date-fns";
+
+export interface IStorage {
+  createPaste(paste: Omit<Paste, "id" | "views" | "createdAt"> & { pasteId: string }): Promise<Paste>;
+  getPasteById(id: number): Promise<Paste | undefined>;
+  getPasteByPasteId(pasteId: string): Promise<Paste | undefined>;
+  incrementViews(id: number): Promise<void>;
+  getRecentPastes(limit?: number): Promise<Paste[]>;
+  getRelatedPastes(language: string, excludeId?: number, limit?: number): Promise<Paste[]>;
+  deletePaste(id: number): Promise<void>;
+}
+
+export class MemStorage implements IStorage {
+  private pastes: Map<number, Paste>;
+  private pasteIdIndex: Map<string, number>;
+  currentId: number;
+
+  constructor() {
+    this.pastes = new Map();
+    this.pasteIdIndex = new Map();
+    this.currentId = 1;
+    
+    // Add some initial pastes for testing
+    this.createInitialPastes();
+  }
+
+  async createPaste(pasteData: Omit<Paste, "id" | "views" | "createdAt"> & { pasteId: string }): Promise<Paste> {
+    const id = this.currentId++;
+    const createdAt = new Date();
+    const views = 0;
+    
+    const paste: Paste = { 
+      id, 
+      pasteId: pasteData.pasteId,
+      title: pasteData.title || "Untitled",
+      content: pasteData.content,
+      language: pasteData.language || "plaintext",
+      createdAt,
+      views,
+      expiresAt: pasteData.expiresAt,
+      authorName: pasteData.authorName || "Anonymous",
+      tags: pasteData.tags || [],
+    };
+    
+    this.pastes.set(id, paste);
+    this.pasteIdIndex.set(paste.pasteId, id);
+    
+    return paste;
+  }
+
+  async getPasteById(id: number): Promise<Paste | undefined> {
+    return this.pastes.get(id);
+  }
+
+  async getPasteByPasteId(pasteId: string): Promise<Paste | undefined> {
+    const id = this.pasteIdIndex.get(pasteId);
+    if (id === undefined) return undefined;
+    return this.pastes.get(id);
+  }
+
+  async incrementViews(id: number): Promise<void> {
+    const paste = this.pastes.get(id);
+    if (paste) {
+      paste.views += 1;
+      this.pastes.set(id, paste);
+    }
+  }
+
+  async getRecentPastes(limit: number = 5): Promise<Paste[]> {
+    // Get all pastes, check for expiration, sort by creation date, and limit
+    const pastes = Array.from(this.pastes.values())
+      .filter(paste => !paste.expiresAt || new Date(paste.expiresAt) > new Date())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+    
+    return pastes;
+  }
+
+  async getRelatedPastes(language: string, excludeId?: number, limit: number = 3): Promise<Paste[]> {
+    // Get pastes with the same language, excluding the given ID
+    const pastes = Array.from(this.pastes.values())
+      .filter(paste => 
+        paste.language === language && 
+        (!excludeId || paste.id !== excludeId) && 
+        (!paste.expiresAt || new Date(paste.expiresAt) > new Date())
+      )
+      .sort((a, b) => b.views - a.views) // Sort by views
+      .slice(0, limit);
+    
+    return pastes;
+  }
+
+  async deletePaste(id: number): Promise<void> {
+    const paste = this.pastes.get(id);
+    if (paste) {
+      this.pasteIdIndex.delete(paste.pasteId);
+      this.pastes.delete(id);
+    }
+  }
+
+  private async createInitialPastes() {
+    // Python example
+    const pythonPaste = {
+      pasteId: nanoid(8),
+      title: "Python DataFrame Operations",
+      content: `import pandas as pd
+import numpy as np
+
+# Create a sample DataFrame
+data = {
+    'Name': ['John', 'Anna', 'Peter', 'Linda'],
+    'Age': [28, 34, 29, 42],
+    'City': ['New York', 'Paris', 'Berlin', 'London']
+}
+
+df = pd.DataFrame(data)
+print(df.head())
+
+# Basic operations
+print("Mean age:", df['Age'].mean())
+print("Oldest person:", df.loc[df['Age'].idxmax()])
+
+# Filtering
+adults = df[df['Age'] > 30]
+print("Adults:")
+print(adults)
+
+# Grouping
+by_city = df.groupby('City').mean()
+print("Average age by city:")
+print(by_city)`,
+      language: "python",
+      authorName: "DataAnalyst",
+      tags: ["python", "pandas", "data-analysis"],
+      expiresAt: add(new Date(), { days: 30 }),
+    };
+    
+    // JavaScript example
+    const jsPaste = {
+      pasteId: nanoid(8),
+      title: "JavaScript Array Methods",
+      content: `// Common JavaScript Array Methods
+
+const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+// Map: Transform each element
+const doubled = numbers.map(num => num * 2);
+console.log('Doubled:', doubled);
+
+// Filter: Keep elements that pass a test
+const evens = numbers.filter(num => num % 2 === 0);
+console.log('Even numbers:', evens);
+
+// Reduce: Accumulate values
+const sum = numbers.reduce((total, num) => total + num, 0);
+console.log('Sum:', sum);
+
+// Find: Get first element that matches
+const firstBigNumber = numbers.find(num => num > 5);
+console.log('First number > 5:', firstBigNumber);
+
+// Some: Check if at least one element passes a test
+const hasEven = numbers.some(num => num % 2 === 0);
+console.log('Has even numbers:', hasEven);
+
+// Every: Check if all elements pass a test
+const allPositive = numbers.every(num => num > 0);
+console.log('All positive:', allPositive);`,
+      language: "javascript",
+      authorName: "JSdev",
+      tags: ["javascript", "arrays", "web-development"],
+      expiresAt: add(new Date(), { days: 30 }),
+    };
+    
+    // Python ML example
+    const pythonMLPaste = {
+      pasteId: nanoid(8),
+      title: "Machine Learning with scikit-learn",
+      content: `import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+
+# Load dataset (using Iris as an example)
+from sklearn.datasets import load_iris
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Train a Random Forest model
+clf = RandomForestClassifier(n_estimators=100, random_state=42)
+clf.fit(X_train_scaled, y_train)
+
+# Make predictions
+y_pred = clf.predict(X_test_scaled)
+
+# Evaluate the model
+print("Classification Report:")
+print(classification_report(y_test, y_pred, target_names=iris.target_names))
+
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+# Feature importance
+feature_importances = clf.feature_importances_
+for i, importance in enumerate(feature_importances):
+    print(f"Feature {iris.feature_names[i]}: {importance:.4f}")`,
+      language: "python",
+      authorName: "MLEngineer",
+      tags: ["python", "machine-learning", "scikit-learn", "data-science"],
+      expiresAt: add(new Date(), { days: 30 }),
+    };
+    
+    // Data Visualization example
+    const vizPaste = {
+      pasteId: nanoid(8),
+      title: "Data Visualization with matplotlib",
+      content: `import matplotlib.pyplot as plt
+import numpy as np
+
+# Generate some sample data
+x = np.linspace(0, 10, 100)
+y1 = np.sin(x)
+y2 = np.cos(x)
+y3 = np.exp(-x/5) * np.sin(x)
+
+# Create a figure with subplots
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+# First subplot
+ax1.plot(x, y1, 'b-', label='sin(x)')
+ax1.plot(x, y2, 'r-', label='cos(x)')
+ax1.set_xlabel('x')
+ax1.set_ylabel('y')
+ax1.set_title('Sine and Cosine Functions')
+ax1.grid(True)
+ax1.legend()
+
+# Second subplot
+ax2.plot(x, y3, 'g-', label='exp(-x/5) * sin(x)')
+ax2.set_xlabel('x')
+ax2.set_ylabel('y')
+ax2.set_title('Damped Sine Function')
+ax2.grid(True)
+ax2.legend()
+
+# Adjust layout
+plt.tight_layout()
+
+# Example of a bar chart
+categories = ['A', 'B', 'C', 'D', 'E']
+values = [5, 7, 3, 8, 6]
+
+plt.figure(figsize=(8, 6))
+plt.bar(categories, values, color='skyblue')
+plt.xlabel('Categories')
+plt.ylabel('Values')
+plt.title('Simple Bar Chart')
+plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+
+# Show the plots
+plt.show()`,
+      language: "python",
+      authorName: "DataViz",
+      tags: ["python", "data-visualization", "matplotlib", "plotting"],
+      expiresAt: add(new Date(), { days: 30 }),
+    };
+    
+    // Python pandas transport example (similar to screenshot)
+    const transportPaste = {
+      pasteId: nanoid(8),
+      title: "Top Transport pandas in python",
+      content: `import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import KFold, cross_val_score
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+
+file_path = "time_series_examples.csv"
+df_temp = pd.read_csv(file_path)
+df_long = df_temp.melt(id_vars=["Name"], var_name="Season")
+X_orig = df_long[["Season"]]
+y_pred = df_long["value"]
+scaler = StandardScaler()
+le = LabelEncoder().fit(X_orig.Season)
+X_encoded = le.transform(X_orig.Season)
+model = LogisticRegression(max_iter=1000)
+cv = KFold(n_splits=5, shuffle=True, random_state=42)
+cv_scores = cross_val_score(model, X_encoded.reshape(-1, 1), y_pred, scoring='accuracy')
+mean_accuracy = cv_scores.mean()
+std_accuracy = cv_scores.std()
+model.fit(X_encoded.reshape(-1,1), y_pred)
+y_pred = model.predict(X_encoded.reshape(-1, 1))
+conf_matrix = confusion_matrix(y_pred, y_pred, output_dict=True)
+print(f"Accuracy: {mean_accuracy:.2f}")`,
+      language: "python",
+      authorName: "Anonymous",
+      tags: ["python", "pandas", "data-analysis", "scikit-learn", "machine-learning", "statistics"],
+      views: 147,
+      createdAt: new Date("2023-04-19"),
+      expiresAt: null,
+    };
+    
+    await this.createPaste(pythonPaste);
+    await this.createPaste(jsPaste);
+    await this.createPaste(pythonMLPaste);
+    await this.createPaste(vizPaste);
+    await this.createPaste(transportPaste);
+  }
+}
+
+export const storage = new MemStorage();
