@@ -6,6 +6,32 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import hljs from "highlight.js";
 
+// Register a simple CSV highlighter
+if (!hljs.getLanguage('csv')) {
+  hljs.registerLanguage('csv', function() {
+    return {
+      name: 'CSV',
+      contains: [
+        {
+          className: 'string',
+          begin: /"/, end: /"/,
+          relevance: 0
+        },
+        {
+          className: 'variable',
+          begin: /^[^,\n]+/,
+          relevance: 0
+        },
+        {
+          className: 'number',
+          begin: /\b\d+(\.\d+)?\b/,
+          relevance: 0
+        }
+      ]
+    };
+  });
+}
+
 interface CodeBlockProps {
   code: string;
   language: string;

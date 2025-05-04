@@ -3,7 +3,6 @@ import { Link, useParams, useLocation } from "wouter";
 import { useEffect, useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import CodeBlock from "@/components/CodeBlock";
-import CsvViewer from "@/components/CsvViewer";
 import { 
   Eye, 
   Calendar, 
@@ -298,23 +297,15 @@ const ViewPaste = () => {
             </div>
           </div>
           
-          {/* Code Snippet or CSV Viewer */}
-          {paste.isFile && paste.fileType === 'csv' ? (
-            <div className="bg-gray-900 border border-gray-700 rounded-b-lg overflow-hidden">
-              <CsvViewer
-                content={paste.content}
-                showLineNumbers={true}
-              />
-            </div>
-          ) : (
-            <CodeBlock
-              code={paste.content}
-              language={paste.language || "plaintext"}
-              showLineNumbers={true}
-              showCopyButton={false}
-              showLineActions={true}
-            />
-          )}
+          {/* Code Snippet */}
+          <CodeBlock
+            code={paste.content}
+            language={paste.isFile && paste.fileType === 'csv' ? 'csv' : (paste.language || "plaintext")}
+            title={paste.isFile && paste.fileType === 'csv' && paste.fileName ? (paste.fileName as string) : undefined}
+            showLineNumbers={true}
+            showCopyButton={false}
+            showLineActions={true}
+          />
           
           {/* Comments Section */}
           <div className="mt-6 bg-gray-800 border border-gray-700 rounded-lg p-4">
