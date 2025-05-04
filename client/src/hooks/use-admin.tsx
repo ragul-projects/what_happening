@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useToast } from './use-toast';
 
 // Hardcoded admin password - in a real app, this would be handled on the server
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = 'admin123'; // Must be exactly this value
 
 interface AdminContextType {
   isAdmin: boolean;
@@ -22,6 +22,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const login = (password: string): boolean => {
+    // Make sure we're doing an exact match
     if (password === ADMIN_PASSWORD) {
       setIsAdmin(true);
       localStorage.setItem('isAdmin', 'true');
@@ -49,8 +50,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     // If password is null (user clicked cancel) or empty, return false
     if (!password) return false;
     
-    // Try to login with the provided password
-    return login(password);
+    // Direct check for the specific password
+    if (password === "admin123") {
+      setIsAdmin(true);
+      localStorage.setItem('isAdmin', 'true');
+      return true;
+    } else {
+      toast({
+        title: 'Authentication Failed',
+        description: 'Incorrect admin password',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   return (
