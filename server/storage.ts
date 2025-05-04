@@ -182,7 +182,12 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
       
-      console.log(`[storage] Found existing paste with ID ${id}:`, existingPaste.paste_id);
+      // In database it's paste_id but in the application it's pasteId
+      const pasteIdValue = 'paste_id' in existingPaste 
+        ? (existingPaste as any).paste_id 
+        : existingPaste.pasteId;
+      
+      console.log(`[storage] Found existing paste with ID ${id}:`, pasteIdValue);
       
       // Perform the update
       const result = await db.update(schema.pastes)
@@ -199,9 +204,14 @@ export class DatabaseStorage implements IStorage {
           .where(eq(schema.pastes.id, id))
           .limit(1);
           
+        // In database it's paste_id but we need to handle both formats
+        const verifiedPasteId = 'paste_id' in verifiedPaste 
+          ? (verifiedPaste as any).paste_id 
+          : verifiedPaste.pasteId;
+        
         console.log(`[storage] Verified updated paste:`, {
           id: verifiedPaste.id,
-          pasteId: verifiedPaste.paste_id,
+          pasteId: verifiedPasteId,
           contentLength: verifiedPaste.content.length,
           contentPreview: verifiedPaste.content.substring(0, 30)
         });

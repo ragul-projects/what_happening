@@ -114,19 +114,29 @@ export default function ViewPaste() {
     },
     onSuccess: (response) => {
       console.log("Update success response:", response);
+      
+      // Check if we received the updated paste in the response
+      if (response.paste) {
+        console.log("Got updated paste directly:", response.paste);
+        
+        // Update the paste data directly in the cache
+        queryClient.setQueryData([`/api/pastes/${pasteId}`], response.paste);
+        
+        // Set the current paste state immediately
+        setPaste(response.paste);
+      } else {
+        // Fall back to refetching the paste
+        console.log("Refetching paste data");
+        queryClient.invalidateQueries({ queryKey: [`/api/pastes/${pasteId}`] });
+      }
+      
       toast({
         title: "Paste updated",
         description: "The paste has been successfully updated",
         duration: 3000,
       });
+      
       setIsEditing(false);
-      
-      // Force a complete refetch by refetching the paste directly
-      console.log("Force refetching paste data");
-      queryClient.removeQueries({ queryKey: [`/api/pastes/${pasteId}`] });
-      
-      // Reload the page to ensure we get fresh data
-      window.location.reload();
     },
     onError: (error: any) => {
       console.error("Update error:", error);

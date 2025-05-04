@@ -213,7 +213,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (success) {
         console.log("Update successful");
-        return res.json({ message: "Paste updated successfully" });
+        
+        // Get the updated paste to return to the client
+        const updatedPaste = await storage.getPasteByPasteId(pasteId);
+        if (updatedPaste) {
+          console.log("Returning updated paste with new content");
+          return res.json({
+            message: "Paste updated successfully",
+            paste: updatedPaste
+          });
+        } else {
+          return res.json({ message: "Paste updated successfully" });
+        }
       } else {
         console.log("Update failed");
         return res.status(500).json({ message: "Failed to update paste" });
