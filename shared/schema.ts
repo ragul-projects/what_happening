@@ -13,7 +13,7 @@ export const pastes = pgTable("pastes", {
   expiresAt: timestamp("expires_at"),
   authorName: text("author_name").default("Anonymous"),
   tags: text("tags").array(),
-  isFile: boolean("isFile").default(false),
+  isFile: boolean("is_file").default(false),
   fileName: text("file_name"),
   fileType: text("file_type"),
 });
