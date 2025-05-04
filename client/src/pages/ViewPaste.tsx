@@ -300,7 +300,7 @@ const ViewPaste = () => {
           {/* Code Snippet */}
           <CodeBlock
             code={paste.content}
-            language={paste.isFile && paste.fileType === 'csv' ? 'csv' : (paste.language || "plaintext")}
+            language="plaintext" 
             title={paste.isFile && paste.fileType === 'csv' && paste.fileName ? (paste.fileName as string) : undefined}
             showLineNumbers={true}
             showCopyButton={false}
