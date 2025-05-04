@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import CodeBlock from "@/components/CodeBlock";
 import { 
@@ -29,25 +29,30 @@ import { Paste } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 
-const ViewPaste = () => {
+// Completely rewritten component to avoid React hooks order issues
+export default function ViewPaste() {
+  // Basic hooks
   const { pasteId } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { verifyAdmin, isAdmin } = useAdmin();
+  const queryClient = useQueryClient();
+  
+  // State
   const [copying, setCopying] = useState(false);
   const [comment, setComment] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState("");
   const commentRef = useRef<HTMLTextAreaElement>(null);
-  const queryClient = useQueryClient();
-  
-  // Use the error handling effect first to maintain consistent hooks order
-  const { data: paste, isLoading, error } = useQuery<Paste>({
+
+  // Queries
+  const { 
+    data: paste, 
+    isLoading, 
+    error 
+  } = useQuery<Paste>({
     queryKey: [`/api/pastes/${pasteId}`],
-  });
-  
-  useEffect(() => {
-    if (error) {
+    onError: () => {
       toast({
         title: "Error",
         description: "This paste doesn't exist or has expired",
@@ -55,14 +60,14 @@ const ViewPaste = () => {
       });
       navigate("/");
     }
-  }, [error, navigate, toast]);
+  });
   
   const { data: relatedPastes = [] } = useQuery<Paste[]>({
     queryKey: [`/api/pastes/${pasteId}/related`],
     enabled: !!paste,
   });
   
-  // Delete paste mutation
+  // Mutations
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!pasteId) return;
@@ -85,7 +90,6 @@ const ViewPaste = () => {
     }
   });
   
-  // Update paste mutation
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!pasteId) return;
@@ -116,13 +120,14 @@ const ViewPaste = () => {
     }
   });
   
-  const deletePaste = () => {
+  // Handler functions
+  function handleDeletePaste() {
     if (window.confirm("Are you sure you want to delete this paste? This action cannot be undone.")) {
       deleteMutation.mutate();
     }
-  };
+  }
 
-  const copyToClipboard = async () => {
+  async function handleCopyToClipboard() {
     if (!paste) return;
     
     try {
@@ -141,9 +146,9 @@ const ViewPaste = () => {
         variant: "destructive",
       });
     }
-  };
+  }
 
-  const downloadPaste = () => {
+  function handleDownloadPaste() {
     if (!paste) return;
     
     const element = document.createElement('a');
@@ -183,9 +188,9 @@ const ViewPaste = () => {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-  };
+  }
 
-  const sharePaste = () => {
+  function handleSharePaste() {
     if (!paste) return;
     
     navigator.clipboard.writeText(window.location.href);
@@ -194,8 +199,45 @@ const ViewPaste = () => {
       description: "Share this link with others to view this paste",
       duration: 2000,
     });
-  };
+  }
 
+  function handleEditMode() {
+    if (paste) {
+      setEditedContent(paste.content);
+      setIsEditing(true);
+    }
+  }
+
+  async function handleCommentFocus(e: React.FocusEvent<HTMLTextAreaElement>) {
+    // Check for admin status when the textarea is focused
+    if (!comment) {
+      // Allow initial input (first-time focus)
+      return;
+    }
+    
+    const adminStatus = await verifyAdmin();
+    if (!adminStatus) {
+      // If not admin, blur the field and show message
+      e.target.blur();
+      toast({
+        title: "Access Denied",
+        description: "Only admins can modify text in comment boxes",
+        variant: "destructive",
+      });
+    }
+  }
+  
+  async function handlePostComment() {
+    if (comment) {
+      // Comments are not currently implemented
+      toast({
+        title: "Coming Soon",
+        description: "Comments feature is not yet implemented",
+      });
+    }
+  }
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-6">
@@ -214,14 +256,6 @@ const ViewPaste = () => {
       </div>
     );
   }
-
-  // Use a callback for handling edit mode
-  const handleEditMode = useCallback(() => {
-    if (paste) {
-      setEditedContent(paste.content);
-      setIsEditing(true);
-    }
-  }, [paste]);
   
   if (!paste) return null;
 
@@ -268,7 +302,7 @@ const ViewPaste = () => {
                 variant="ghost" 
                 size="sm"
                 className="text-gray-200 hover:text-white transition text-sm flex items-center"
-                onClick={copyToClipboard}
+                onClick={handleCopyToClipboard}
                 disabled={isEditing}
               >
                 {copying ? (
@@ -284,7 +318,7 @@ const ViewPaste = () => {
                   ? "bg-blue-600 hover:bg-blue-700 text-white transition text-sm flex items-center"
                   : "text-gray-200 hover:text-white transition text-sm flex items-center"
                 }
-                onClick={downloadPaste}
+                onClick={handleDownloadPaste}
                 disabled={isEditing}
               >
                 <Download className="h-4 w-4 mr-1" /> 
@@ -294,7 +328,7 @@ const ViewPaste = () => {
                 variant="ghost" 
                 size="sm"
                 className="text-gray-200 hover:text-white transition text-sm flex items-center"
-                onClick={sharePaste}
+                onClick={handleSharePaste}
                 disabled={isEditing}
               >
                 <Share className="h-4 w-4 mr-1" /> Share
@@ -352,7 +386,7 @@ const ViewPaste = () => {
                 variant="ghost" 
                 size="sm"
                 className="text-red-400 hover:text-red-300 transition text-sm flex items-center ml-auto"
-                onClick={() => deletePaste()}
+                onClick={handleDeletePaste}
                 disabled={deleteMutation.isPending || isEditing}
               >
                 <Trash className="h-4 w-4 mr-1" /> 
@@ -392,7 +426,7 @@ const ViewPaste = () => {
             /* Code Snippet - Only show when not editing */
             <CodeBlock
               code={paste.content}
-              language="plaintext" 
+              language={paste.language || "plaintext"}
               title={paste.isFile && paste.fileType === 'csv' && paste.fileName ? (paste.fileName as string) : undefined}
               showLineNumbers={true}
               showCopyButton={false}
@@ -410,42 +444,14 @@ const ViewPaste = () => {
                 placeholder="Add a comment..."
                 className="w-full bg-gray-700 text-gray-200 border border-gray-700 rounded p-3 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 rows={3}
-                onFocus={async (e) => {
-                  // Check for admin status when the textarea is focused
-                  if (!comment) {
-                    // Allow initial input (first-time focus)
-                    return;
-                  }
-                  
-                  const isAdmin = await verifyAdmin();
-                  if (!isAdmin) {
-                    // If not admin, blur the field and show message
-                    e.target.blur();
-                    toast({
-                      title: "Access Denied",
-                      description: "Only admins can modify text in comment boxes",
-                      variant: "destructive",
-                    });
-                  }
-                }}
-                onChange={(e) => {
-                  // We've already checked for admin status on focus
-                  setComment(e.target.value);
-                }}
+                onFocus={handleCommentFocus}
+                onChange={(e) => setComment(e.target.value)}
               />
             </div>
             <div className="flex justify-end">
               <Button 
                 className="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-500/90 transition"
-                onClick={async () => {
-                  if (comment) {
-                    // Comments are not currently implemented
-                    toast({
-                      title: "Coming Soon",
-                      description: "Comments feature is not yet implemented",
-                    });
-                  }
-                }}
+                onClick={handlePostComment}
               >
                 Post Comment
               </Button>
@@ -539,6 +545,4 @@ const ViewPaste = () => {
       </div>
     </div>
   );
-};
-
-export default ViewPaste;
+}
