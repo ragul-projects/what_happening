@@ -291,29 +291,27 @@ const ViewPaste = () => {
                 <ul className="space-y-3">
                   {relatedPastes.map((related: Paste) => (
                     <li key={related.pasteId}>
-                      <Link href={`/paste/${related.pasteId}`}>
-                        <a className="block p-2 hover:bg-gray-700 rounded transition">
-                          <div className="flex items-center mb-1">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
-                            <h4 className="text-gray-200 font-medium text-sm truncate">{related.title}</h4>
-                          </div>
-                          <div className="flex text-xs text-gray-500">
-                            <span className="mr-3">
-                              <Eye className="h-3 w-3 inline mr-1" /> {related.views}
-                            </span>
-                            <span>
-                              <Calendar className="h-3 w-3 inline mr-1" /> 
-                              {format(new Date(related.createdAt), "MMM dd, yyyy")}
-                            </span>
-                          </div>
-                        </a>
+                      <Link to={`/paste/${related.pasteId}`} className="block p-2 hover:bg-gray-700 rounded transition">
+                        <div className="flex items-center mb-1">
+                          <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                          <h4 className="text-gray-200 font-medium text-sm truncate">{related.title}</h4>
+                        </div>
+                        <div className="flex text-xs text-gray-500">
+                          <span className="mr-3">
+                            <Eye className="h-3 w-3 inline mr-1" /> {related.views}
+                          </span>
+                          <span>
+                            <Calendar className="h-3 w-3 inline mr-1" /> 
+                            {format(new Date(related.createdAt), "MMM dd, yyyy")}
+                          </span>
+                        </div>
                       </Link>
                     </li>
                   ))}
                 </ul>
                 <div className="mt-3 text-center">
-                  <Link href={`/language/${paste.language}`}>
-                    <a className="text-blue-500 text-sm hover:text-blue-400 transition">View More</a>
+                  <Link to={`/language/${paste.language}`} className="text-blue-500 text-sm hover:text-blue-400 transition">
+                    View More
                   </Link>
                 </div>
               </CardContent>

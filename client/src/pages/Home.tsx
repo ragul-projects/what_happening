@@ -20,7 +20,7 @@ const Home = () => {
           <p className="text-xl text-gray-300 mb-6">
             CodeSnap lets you share code snippets with syntax highlighting, line numbers, and more.
           </p>
-          <Link href="/create">
+          <Link to="/create">
             <Button size="lg" className="bg-blue-500 hover:bg-blue-600 text-white">
               Create New Snippet
             </Button>
@@ -31,7 +31,7 @@ const Home = () => {
       <section>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">Recent Snippets</h2>
-          <Link href="/explore">
+          <Link to="/explore">
             <Button variant="ghost" className="text-blue-400 hover:text-blue-300 flex items-center gap-1">
               View All <ChevronRight className="h-4 w-4" />
             </Button>
@@ -55,7 +55,7 @@ const Home = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recentPastes?.map((paste: Paste) => (
-              <Link key={paste.pasteId} href={`/paste/${paste.pasteId}`}>
+              <Link key={paste.pasteId} to={`/paste/${paste.pasteId}`}>
                 <Card className="bg-gray-800 border-gray-700 h-full hover:border-gray-600 transition-colors cursor-pointer">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg font-medium text-white truncate">
