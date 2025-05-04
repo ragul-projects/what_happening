@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useToast } from './use-toast';
 
 // Hardcoded admin password - in a real app, this would be handled on the server
-const ADMIN_PASSWORD = 'admin123'; // Must be exactly this value
+const ADMIN_PASSWORD = 'kit@123'; // Must be exactly this value
 
 interface AdminContextType {
   isAdmin: boolean;
@@ -51,7 +51,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (!password) return false;
     
     // Direct check for the specific password
-    if (password === "admin123") {
+    if (password === ADMIN_PASSWORD) {
       setIsAdmin(true);
       localStorage.setItem('isAdmin', 'true');
       return true;
