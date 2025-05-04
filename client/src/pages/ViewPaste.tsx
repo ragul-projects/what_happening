@@ -32,9 +32,11 @@ const ViewPaste = () => {
   const { pasteId } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { verifyAdmin } = useAdmin();
+  const { verifyAdmin, isAdmin } = useAdmin();
   const [copying, setCopying] = useState(false);
   const [comment, setComment] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState("");
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
   
@@ -65,6 +67,37 @@ const ViewPaste = () => {
       toast({
         title: "Error",
         description: "Failed to delete the paste",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update paste mutation
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!pasteId) return;
+      const adminPasswordInput = prompt("Enter admin password to confirm update:");
+      if (!adminPasswordInput) return; // User canceled
+      
+      return apiRequest('PUT', `/api/pastes/${pasteId}`, {
+        content: editedContent,
+        adminPassword: adminPasswordInput
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Paste updated",
+        description: "The paste has been successfully updated",
+        duration: 3000,
+      });
+      setIsEditing(false);
+      // Invalidate the query to refetch the updated paste
+      queryClient.invalidateQueries({ queryKey: [`/api/pastes/${pasteId}`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update the paste. Check your admin password.",
         variant: "destructive",
       });
     }
@@ -182,6 +215,13 @@ const ViewPaste = () => {
 
   if (!paste) return null;
 
+  // Set up the edited content when entering edit mode
+  useEffect(() => {
+    if (paste && isEditing) {
+      setEditedContent(paste.content);
+    }
+  }, [isEditing, paste]);
+
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -226,6 +266,7 @@ const ViewPaste = () => {
                 size="sm"
                 className="text-gray-200 hover:text-white transition text-sm flex items-center"
                 onClick={copyToClipboard}
+                disabled={isEditing}
               >
                 {copying ? (
                   <><Check className="h-4 w-4 mr-1" /> Copied</>
@@ -241,6 +282,7 @@ const ViewPaste = () => {
                   : "text-gray-200 hover:text-white transition text-sm flex items-center"
                 }
                 onClick={downloadPaste}
+                disabled={isEditing}
               >
                 <Download className="h-4 w-4 mr-1" /> 
                 {paste.isFile && paste.fileType === 'csv' ? 'Download CSV' : 'Download'}
@@ -250,6 +292,7 @@ const ViewPaste = () => {
                 size="sm"
                 className="text-gray-200 hover:text-white transition text-sm flex items-center"
                 onClick={sharePaste}
+                disabled={isEditing}
               >
                 <Share className="h-4 w-4 mr-1" /> Share
               </Button>
@@ -258,6 +301,7 @@ const ViewPaste = () => {
                 size="sm"
                 className="text-gray-200 hover:text-white transition text-sm flex items-center"
                 onClick={() => window.print()}
+                disabled={isEditing}
               >
                 <Printer className="h-4 w-4 mr-1" /> Print
               </Button>
@@ -266,6 +310,7 @@ const ViewPaste = () => {
                   variant="ghost" 
                   size="sm"
                   className="text-gray-200 hover:text-white transition text-sm flex items-center"
+                  disabled={isEditing}
                 >
                   <FileText className="h-4 w-4 mr-1" /> Raw
                 </Button>
@@ -274,6 +319,7 @@ const ViewPaste = () => {
                 variant="ghost" 
                 size="sm"
                 className="text-gray-200 hover:text-white transition text-sm flex items-center"
+                disabled={isEditing}
               >
                 <Maximize className="h-4 w-4 mr-1" /> Embed
               </Button>
@@ -281,15 +327,30 @@ const ViewPaste = () => {
                 variant="ghost" 
                 size="sm"
                 className="text-gray-200 hover:text-white transition text-sm flex items-center"
+                disabled={isEditing}
               >
                 <Flag className="h-4 w-4 mr-1" /> Report
               </Button>
+              
+              {/* Edit Button - Only show if user is admin and not editing */}
+              {isAdmin && !isEditing && !paste.isFile && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-blue-400 hover:text-blue-300 transition text-sm flex items-center"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Edit className="h-4 w-4 mr-1" /> Edit
+                </Button>
+              )}
+              
+              {/* Delete Button */}
               <Button 
                 variant="ghost" 
                 size="sm"
                 className="text-red-400 hover:text-red-300 transition text-sm flex items-center ml-auto"
                 onClick={() => deletePaste()}
-                disabled={deleteMutation.isPending}
+                disabled={deleteMutation.isPending || isEditing}
               >
                 <Trash className="h-4 w-4 mr-1" /> 
                 {deleteMutation.isPending ? "Deleting..." : "Delete"}
@@ -297,17 +358,46 @@ const ViewPaste = () => {
             </div>
           </div>
           
-          {/* Code Snippet */}
-          <CodeBlock
-            code={paste.isFile && paste.fileType === 'csv' ? 
-              "/* CSV data is available for download but not displayed for privacy reasons */"
-              : paste.content}
-            language="plaintext" 
-            title={paste.isFile && paste.fileType === 'csv' && paste.fileName ? (paste.fileName as string) : undefined}
-            showLineNumbers={true}
-            showCopyButton={false}
-            showLineActions={true}
-          />
+          {/* Editing Interface */}
+          {isEditing ? (
+            <div className="bg-gray-800 border-x border-b border-gray-700 p-4">
+              <Textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="w-full bg-gray-700 text-gray-200 border border-gray-700 rounded p-3 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                rows={15}
+              />
+              <div className="flex justify-end mt-4 space-x-3">
+                <Button
+                  variant="outline"
+                  className="text-gray-200 border-gray-600"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="default"
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => updateMutation.mutate()}
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Code Snippet - Only show when not editing */
+            <CodeBlock
+              code={paste.isFile && paste.fileType === 'csv' ? 
+                "/* CSV data is available for download but not displayed for privacy reasons */"
+                : paste.content}
+              language="plaintext" 
+              title={paste.isFile && paste.fileType === 'csv' && paste.fileName ? (paste.fileName as string) : undefined}
+              showLineNumbers={true}
+              showCopyButton={false}
+              showLineActions={true}
+            />
+          )}
           
           {/* Comments Section */}
           <div className="mt-6 bg-gray-800 border border-gray-700 rounded-lg p-4">

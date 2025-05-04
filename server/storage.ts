@@ -13,6 +13,7 @@ export interface IStorage {
   getRecentPastes(limit?: number): Promise<Paste[]>;
   getRelatedPastes(language: string, excludeId?: number, limit?: number): Promise<Paste[]>;
   deletePaste(id: number): Promise<void>;
+  updatePaste(id: number, content: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -156,6 +157,20 @@ export class DatabaseStorage implements IStorage {
         .where(eq(schema.pastes.id, id));
     } catch (error) {
       console.error("[storage] Error in deletePaste:", error);
+    }
+  }
+
+  async updatePaste(id: number, content: string): Promise<boolean> {
+    try {
+      const result = await db.update(schema.pastes)
+        .set({ content })
+        .where(eq(schema.pastes.id, id))
+        .returning({ id: schema.pastes.id });
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error("[storage] Error in updatePaste:", error);
+      return false;
     }
   }
 

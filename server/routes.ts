@@ -171,6 +171,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: "Authentication error" });
     }
   });
+  
+  // Update a paste (requires admin authentication)
+  app.put("/api/pastes/:pasteId", async (req, res) => {
+    try {
+      const { pasteId } = req.params;
+      const { content, adminPassword } = req.body;
+      
+      // Verify admin password
+      const actualAdminPassword = process.env.ADMIN_PASSWORD;
+      
+      if (!actualAdminPassword || adminPassword !== actualAdminPassword) {
+        return res.status(403).json({ message: "Unauthorized: Admin access required" });
+      }
+      
+      // Get the paste
+      const paste = await storage.getPasteByPasteId(pasteId);
+      
+      if (!paste) {
+        return res.status(404).json({ message: "Paste not found" });
+      }
+      
+      // Update the paste content
+      const success = await storage.updatePaste(paste.id, content);
+      
+      if (success) {
+        return res.json({ message: "Paste updated successfully" });
+      } else {
+        return res.status(500).json({ message: "Failed to update paste" });
+      }
+    } catch (error) {
+      console.error("Error updating paste:", error);
+      res.status(500).json({ message: "Error updating paste" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
