@@ -101,12 +101,19 @@ export default function ViewPaste() {
       const adminPasswordInput = prompt("Enter admin password to confirm update:");
       if (!adminPasswordInput) return; // User canceled
       
+      console.log("Sending update:", {
+        pasteId,
+        contentLength: editedContent.length,
+        contentPreview: editedContent.substring(0, 30)
+      });
+      
       return apiRequest('PUT', `/api/pastes/${pasteId}`, {
         content: editedContent,
         adminPassword: adminPasswordInput
       });
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log("Update success response:", response);
       toast({
         title: "Paste updated",
         description: "The paste has been successfully updated",
@@ -117,6 +124,7 @@ export default function ViewPaste() {
       queryClient.invalidateQueries({ queryKey: [`/api/pastes/${pasteId}`] });
     },
     onError: (error: any) => {
+      console.error("Update error:", error);
       toast({
         title: "Error",
         description: error?.message || "Failed to update the paste. Check your admin password.",
@@ -208,6 +216,7 @@ export default function ViewPaste() {
 
   function handleEditMode() {
     if (paste) {
+      console.log("Setting edit mode, content:", paste.content);
       setEditedContent(paste.content);
       setIsEditing(true);
     }

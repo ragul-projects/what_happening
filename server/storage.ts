@@ -169,11 +169,17 @@ export class DatabaseStorage implements IStorage {
 
   async updatePaste(id: number, content: string): Promise<boolean> {
     try {
-      const result = await db.update(schema.pastes)
+      console.log(`[storage] Updating paste with ID ${id}, content length: ${content.length}`);
+      
+      // Generate SQL log
+      const query = db.update(schema.pastes)
         .set({ content })
         .where(eq(schema.pastes.id, id))
         .returning({ id: schema.pastes.id });
       
+      const result = await query;
+      
+      console.log(`[storage] Update result:`, result);
       return result.length > 0;
     } catch (error) {
       console.error("[storage] Error in updatePaste:", error);

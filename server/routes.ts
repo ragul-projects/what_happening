@@ -188,10 +188,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { pasteId } = req.params;
       const { content, adminPassword } = req.body;
       
+      console.log(`Updating paste ${pasteId} with content: ${content.substring(0, 30)}...`);
+      
       // Verify admin password
       const actualAdminPassword = process.env.ADMIN_PASSWORD;
       
       if (!actualAdminPassword || adminPassword !== actualAdminPassword) {
+        console.log("Authentication failed - wrong password");
         return res.status(403).json({ message: "Unauthorized: Admin access required" });
       }
       
@@ -199,15 +202,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paste = await storage.getPasteByPasteId(pasteId);
       
       if (!paste) {
+        console.log(`Paste not found: ${pasteId}`);
         return res.status(404).json({ message: "Paste not found" });
       }
+      
+      console.log(`Found paste with id: ${paste.id}, updating content...`);
       
       // Update the paste content
       const success = await storage.updatePaste(paste.id, content);
       
       if (success) {
+        console.log("Update successful");
         return res.json({ message: "Paste updated successfully" });
       } else {
+        console.log("Update failed");
         return res.status(500).json({ message: "Failed to update paste" });
       }
     } catch (error) {
