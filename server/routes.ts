@@ -126,10 +126,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete a paste
+  // Delete a paste (requires admin authentication)
   app.delete("/api/pastes/:pasteId", async (req, res) => {
     try {
       const { pasteId } = req.params;
+      const { adminPassword } = req.body;
+      
+      // Verify admin password
+      const actualAdminPassword = process.env.ADMIN_PASSWORD;
+      
+      if (!actualAdminPassword || adminPassword !== actualAdminPassword) {
+        return res.status(403).json({ message: "Unauthorized: Admin access required" });
+      }
+      
       const paste = await storage.getPasteByPasteId(pasteId);
       
       if (!paste) {

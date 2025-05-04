@@ -71,7 +71,12 @@ export default function ViewPaste() {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!pasteId) return;
-      return apiRequest('DELETE', `/api/pastes/${pasteId}`);
+      const adminPasswordInput = prompt("Enter admin password to confirm deletion:");
+      if (!adminPasswordInput) return; // User canceled
+      
+      return apiRequest('DELETE', `/api/pastes/${pasteId}`, {
+        adminPassword: adminPasswordInput
+      });
     },
     onSuccess: () => {
       toast({
@@ -81,10 +86,10 @@ export default function ViewPaste() {
       });
       navigate("/");
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to delete the paste",
+        description: error?.message || "Failed to delete the paste. Check your admin password.",
         variant: "destructive",
       });
     }
@@ -381,17 +386,19 @@ export default function ViewPaste() {
                 </Button>
               )}
               
-              {/* Delete Button */}
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="text-red-400 hover:text-red-300 transition text-sm flex items-center ml-auto"
-                onClick={handleDeletePaste}
-                disabled={deleteMutation.isPending || isEditing}
-              >
-                <Trash className="h-4 w-4 mr-1" /> 
-                {deleteMutation.isPending ? "Deleting..." : "Delete"}
-              </Button>
+              {/* Delete Button - Only show if user is admin */}
+              {isAdmin && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-red-400 hover:text-red-300 transition text-sm flex items-center ml-auto"
+                  onClick={handleDeletePaste}
+                  disabled={deleteMutation.isPending || isEditing}
+                >
+                  <Trash className="h-4 w-4 mr-1" /> 
+                  {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
+              )}
             </div>
           </div>
           
