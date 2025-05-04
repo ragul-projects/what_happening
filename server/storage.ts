@@ -79,20 +79,9 @@ export class DatabaseStorage implements IStorage {
     const currentDate = new Date();
     
     try {
-      // Use a simpler query to debug the issue
+      // Include all columns including file-related ones
       const recentPastes = await db
-        .select({
-          id: pastes.id,
-          pasteId: pastes.pasteId,
-          title: pastes.title,
-          content: pastes.content,
-          language: pastes.language,
-          createdAt: pastes.createdAt,
-          views: pastes.views,
-          expiresAt: pastes.expiresAt,
-          authorName: pastes.authorName,
-          // Skip problematic fields for now
-        })
+        .select()
         .from(pastes)
         .where(or(
           isNull(pastes.expiresAt),
@@ -102,7 +91,7 @@ export class DatabaseStorage implements IStorage {
         .limit(limit);
       
       console.log("[storage] Successfully fetched recent pastes:", recentPastes.length);
-      return recentPastes as Paste[];
+      return recentPastes;
     } catch (error) {
       console.error("[storage] Error in getRecentPastes:", error);
       // Return empty array to avoid breaking the application
@@ -114,19 +103,9 @@ export class DatabaseStorage implements IStorage {
     const currentDate = new Date();
     
     try {
-      const query = db
-        .select({
-          id: pastes.id,
-          pasteId: pastes.pasteId,
-          title: pastes.title,
-          content: pastes.content,
-          language: pastes.language,
-          createdAt: pastes.createdAt,
-          views: pastes.views,
-          expiresAt: pastes.expiresAt,
-          authorName: pastes.authorName,
-          // Skip problematic fields for now
-        })
+      // Include all columns including file-related ones
+      const relatedPastes = await db
+        .select()
         .from(pastes)
         .where(and(
           eq(pastes.language, language),
@@ -139,9 +118,8 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(pastes.views))
         .limit(limit);
       
-      const relatedPastes = await query;
       console.log("[storage] Successfully fetched related pastes:", relatedPastes.length);
-      return relatedPastes as Paste[];
+      return relatedPastes;
     } catch (error) {
       console.error("[storage] Error in getRelatedPastes:", error);
       return [];
