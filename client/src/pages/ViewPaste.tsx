@@ -92,7 +92,11 @@ const ViewPaste = () => {
     
     const file = new Blob([paste.content], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = `${paste.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${extension}`;
+    // Handle null title case
+    const fileName = paste.title 
+      ? `${paste.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${extension}`
+      : `paste_${paste.pasteId}${extension}`;
+    element.download = fileName;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -202,15 +206,15 @@ const ViewPaste = () => {
               >
                 <Printer className="h-4 w-4 mr-1" /> Print
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="text-gray-200 hover:text-white transition text-sm flex items-center"
-                as={Link}
-                href={`/raw/${pasteId}`}
-              >
-                <FileText className="h-4 w-4 mr-1" /> Raw
-              </Button>
+              <Link to={`/raw/${pasteId}`}>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-gray-200 hover:text-white transition text-sm flex items-center"
+                >
+                  <FileText className="h-4 w-4 mr-1" /> Raw
+                </Button>
+              </Link>
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -231,7 +235,7 @@ const ViewPaste = () => {
           {/* Code Snippet */}
           <CodeBlock
             code={paste.content}
-            language={paste.language}
+            language={paste.language || "plaintext"}
             showLineNumbers={true}
             showCopyButton={false}
             showLineActions={true}
@@ -263,13 +267,13 @@ const ViewPaste = () => {
               <div className="flex items-center mb-3">
                 <Avatar className="w-10 h-10 rounded-full bg-blue-500 mr-3">
                   <AvatarFallback className="text-white font-bold">
-                    {paste.authorName.charAt(0).toUpperCase()}
+                    {(paste.authorName || "A").charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-medium text-white">{paste.authorName}</h3>
+                  <h3 className="font-medium text-white">{paste.authorName || "Anonymous"}</h3>
                   <p className="text-gray-400 text-xs">
-                    {paste.authorName === "Anonymous" ? "Guest user" : "Member"}
+                    {paste.authorName === "Anonymous" || !paste.authorName ? "Guest user" : "Member"}
                   </p>
                 </div>
               </div>
@@ -310,7 +314,7 @@ const ViewPaste = () => {
                   ))}
                 </ul>
                 <div className="mt-3 text-center">
-                  <Link to={`/language/${paste.language}`} className="text-blue-500 text-sm hover:text-blue-400 transition">
+                  <Link to={`/language/${paste.language || "plaintext"}`} className="text-blue-500 text-sm hover:text-blue-400 transition">
                     View More
                   </Link>
                 </div>
