@@ -12,6 +12,7 @@ export const pastes = pgTable("pastes", {
   views: integer("views").default(0).notNull(),
   expiresAt: timestamp("expires_at"),
   authorName: text("author_name").default("Anonymous"),
+  tags: text("tags").array(),
   isFile: boolean("is_file").default(false),
   fileName: text("file_name"),
   fileType: text("file_type"),
