@@ -96,7 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get recent public pastes
   app.get("/api/pastes", async (req, res) => {
     try {
-      const pastes = await storage.getRecentPastes();
+      // Optional limit parameter, default to 15 if not provided
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 15;
+      const pastes = await storage.getRecentPastes(limit);
       res.json(pastes.map(({ id, ...paste }) => paste));
     } catch (error) {
       res.status(500).json({ message: "Error retrieving pastes" });

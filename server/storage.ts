@@ -96,7 +96,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getRecentPastes(limit: number = 5): Promise<Paste[]> {
+  async getRecentPastes(limit: number = 15): Promise<Paste[]> {
     const currentDate = new Date();
     
     try {
