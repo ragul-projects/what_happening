@@ -27,7 +27,7 @@ type CreatePasteFormValues = z.infer<typeof formSchema>;
 
 const CreatePaste = () => {
   const { toast } = useToast();
-  const { verifyAdmin } = useAdmin();
+  const { verifyAdmin, isAdmin } = useAdmin();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("code");
@@ -40,7 +40,7 @@ const CreatePaste = () => {
       title: "",
       content: "",
       language: "plaintext",
-      expirationMinutes: null,
+      expirationMinutes: null as unknown as string, // to fix type error
       authorName: "Anonymous",
       isFile: false,
       fileName: "",
@@ -275,12 +275,12 @@ const CreatePaste = () => {
                                   <FormLabel className="text-gray-200">File Content Preview</FormLabel>
                                   <FormControl>
                                     <Textarea
-                                      readOnly={!isAdmin} 
-                                      className="min-h-[200px] font-mono text-sm bg-gray-700 border-gray-600 text-gray-200"
+                                      readOnly={!isAdmin}
+                                      className={`min-h-[200px] font-mono text-sm bg-gray-700 border-gray-600 ${isAdmin ? "text-gray-200" : "text-gray-400"}`}
                                       {...field}
                                       onFocus={async (e) => {
-                                        const isAdmin = await verifyAdmin();
-                                        if (!isAdmin) {
+                                        const currentIsAdmin = await verifyAdmin();
+                                        if (!currentIsAdmin) {
                                           e.target.blur();
                                           toast({
                                             title: "Access Denied",
@@ -342,7 +342,7 @@ const CreatePaste = () => {
                               <FormItem className="flex items-center space-x-2">
                                 <FormControl>
                                   <Switch
-                                    checked={field.value}
+                                    checked={!!field.value}
                                     onCheckedChange={(checked) => {
                                       field.onChange(checked);
                                       if (checked && !selectedFile) {

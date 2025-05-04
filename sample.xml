@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<codeSnap>
+  <metadata>
+    <title>Sample XML Configuration</title>
+    <author>CodeSnap Admin</author>
+    <createdDate>2023-05-04</createdDate>
+    <description>This is a sample XML file to demonstrate CodeSnap's XML file handling capabilities</description>
+    <tags>
+      <tag>xml</tag>
+      <tag>configuration</tag>
+      <tag>sample</tag>
+      <tag>demo</tag>
+    </tags>
+  </metadata>
+  <configuration>
+    <settings>
+      <setting key="displayMode" value="dark" />
+      <setting key="syntaxHighlight" value="true" />
+      <setting key="lineNumbers" value="true" />
+      <setting key="fontSize" value="14" />
+      <setting key="tabSize" value="2" />
+    </settings>
+    <languages>
+      <language name="JavaScript" extension=".js" popularity="high" />
+      <language name="Python" extension=".py" popularity="high" />
+      <language name="TypeScript" extension=".ts" popularity="medium" />
+      <language name="HTML" extension=".html" popularity="high" />
+      <language name="CSS" extension=".css" popularity="medium" />
+      <language name="XML" extension=".xml" popularity="low" />
+    </languages>
+    <features>
+      <feature name="Copy to Clipboard" enabled="true" />
+      <feature name="Download File" enabled="true" />
+      <feature name="Share Link" enabled="true" />
+      <feature name="Raw View" enabled="true" />
+      <feature name="XML Support" enabled="true" />
+    </features>
+  </configuration>
+</codeSnap>
