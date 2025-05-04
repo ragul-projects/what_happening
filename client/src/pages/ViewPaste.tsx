@@ -32,14 +32,17 @@ const ViewPaste = () => {
   const { pasteId } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { verifyAdmin } = useAdmin();
   const [copying, setCopying] = useState(false);
+  const [comment, setComment] = useState("");
+  const commentRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
   
   const { data: paste, isLoading, error } = useQuery<Paste>({
     queryKey: [`/api/pastes/${pasteId}`],
   });
   
-  const { data: relatedPastes } = useQuery({
+  const { data: relatedPastes = [] } = useQuery<Paste[]>({
     queryKey: [`/api/pastes/${pasteId}/related`],
     enabled: !!paste,
   });
@@ -289,13 +292,48 @@ const ViewPaste = () => {
             <h3 className="text-lg font-semibold text-white mb-4">Comments (0)</h3>
             <div className="mb-4">
               <Textarea 
+                ref={commentRef}
+                value={comment}
                 placeholder="Add a comment..."
                 className="w-full bg-gray-700 text-gray-200 border border-gray-700 rounded p-3 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 rows={3}
+                onChange={async (e) => {
+                  // If the textarea already has content and is being modified, require admin authentication
+                  if (comment && e.target.value !== comment) {
+                    const isAdmin = await verifyAdmin();
+                    if (isAdmin) {
+                      setComment(e.target.value);
+                    } else {
+                      // Reset to previous value if not admin
+                      if (commentRef.current) {
+                        commentRef.current.value = comment;
+                      }
+                      toast({
+                        title: "Access Denied",
+                        description: "Only admins can modify text in comment boxes",
+                        variant: "destructive",
+                      });
+                    }
+                  } else {
+                    // Initial input when empty doesn't require validation
+                    setComment(e.target.value);
+                  }
+                }}
               />
             </div>
             <div className="flex justify-end">
-              <Button className="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-500/90 transition">
+              <Button 
+                className="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-500/90 transition"
+                onClick={async () => {
+                  if (comment) {
+                    // Comments are not currently implemented
+                    toast({
+                      title: "Coming Soon",
+                      description: "Comments feature is not yet implemented",
+                    });
+                  }
+                }}
+              >
                 Post Comment
               </Button>
             </div>

@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAdmin } from "@/hooks/use-admin";
 import hljs from "highlight.js";
 
 interface CodeBlockProps {
@@ -23,15 +24,56 @@ const CodeBlock = ({
   showLineActions = true,
 }: CodeBlockProps) => {
   const { toast } = useToast();
+  const { verifyAdmin } = useAdmin();
   const codeRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [copying, setCopying] = useState(false);
   const [copyingLine, setCopyingLine] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableCode, setEditableCode] = useState(code);
 
   useEffect(() => {
     if (codeRef.current) {
       hljs.highlightElement(codeRef.current);
     }
+    // Initialize editable code with the provided code
+    setEditableCode(code);
   }, [code, language]);
+
+  const requestEdit = async () => {
+    const isAdmin = await verifyAdmin();
+    if (isAdmin) {
+      setIsEditing(true);
+    } else {
+      toast({
+        title: "Access Denied",
+        description: "Only admins can edit code snippets",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTextareaChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    // Only prompt for admin password if there's an actual change 
+    if (editableCode !== newValue) {
+      setEditableCode(newValue);
+    }
+  };
+
+  const saveChanges = () => {
+    // In a real application, this would save changes to the server
+    toast({
+      title: "Changes Saved",
+      description: "In a real implementation, this would update the database",
+    });
+    setIsEditing(false);
+  };
+
+  const cancelEdit = () => {
+    setEditableCode(code);
+    setIsEditing(false);
+  };
 
   const copyToClipboard = async () => {
     try {
@@ -125,18 +167,62 @@ const CodeBlock = ({
         </div>
       )}
       <div className="overflow-x-auto">
-        <div className="p-1 code-container font-mono text-sm leading-relaxed">
-          <div className="hidden">
-            <pre className={`language-${language}`}>
-              <code ref={codeRef}>{code}</code>
-            </pre>
+        {isEditing ? (
+          <div className="p-4">
+            <textarea
+              ref={textareaRef}
+              value={editableCode}
+              onChange={handleTextareaChange}
+              className="w-full h-64 bg-gray-800 text-gray-200 border border-gray-700 p-3 font-mono text-sm resize-y focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <div className="flex justify-end mt-4 space-x-2">
+              <Button 
+                variant="outline" 
+                className="border-gray-700 text-gray-300 hover:bg-gray-800" 
+                onClick={cancelEdit}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="bg-blue-500 hover:bg-blue-600 text-white" 
+                onClick={saveChanges}
+              >
+                Save Changes
+              </Button>
+            </div>
           </div>
-          {renderCodeLines()}
-        </div>
+        ) : (
+          <div className="p-1 code-container font-mono text-sm leading-relaxed">
+            <div className="hidden">
+              <pre className={`language-${language}`}>
+                <code ref={codeRef}>{code}</code>
+              </pre>
+            </div>
+            <div className="flex justify-end px-2 pt-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 text-gray-400 hover:text-white"
+                      onClick={requestEdit}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Edit code (admin only)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            {renderCodeLines()}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-import { useState } from "react";
 export default CodeBlock;
