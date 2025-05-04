@@ -113,26 +113,38 @@ const ViewPaste = () => {
     
     const element = document.createElement('a');
     
-    // Determine file extension based on language
-    let extension = '.txt';
-    switch (paste.language) {
-      case 'javascript': extension = '.js'; break;
-      case 'typescript': extension = '.ts'; break;
-      case 'html': extension = '.html'; break;
-      case 'css': extension = '.css'; break;
-      case 'python': extension = '.py'; break;
-      case 'java': extension = '.java'; break;
-      case 'csharp': extension = '.cs'; break;
-      default: extension = '.txt';
+    // Check if this is a file (particularly XML)
+    if (paste.isFile && paste.fileName && paste.fileType === 'xml') {
+      // For XML files, use the original filename if available
+      const file = new Blob([paste.content], { type: 'application/xml' });
+      element.href = URL.createObjectURL(file);
+      element.download = paste.fileName;
+    } else {
+      // For regular code pastes, determine file extension based on language
+      let extension = '.txt';
+      switch (paste.language) {
+        case 'javascript': extension = '.js'; break;
+        case 'typescript': extension = '.ts'; break;
+        case 'html': extension = '.html'; break;
+        case 'css': extension = '.css'; break;
+        case 'python': extension = '.py'; break;
+        case 'java': extension = '.java'; break;
+        case 'csharp': extension = '.cs'; break;
+        case 'xml': extension = '.xml'; break;
+        default: extension = '.txt';
+      }
+      
+      const file = new Blob([paste.content], { 
+        type: paste.language === 'xml' ? 'application/xml' : 'text/plain' 
+      });
+      element.href = URL.createObjectURL(file);
+      // Handle null title case
+      const fileName = paste.title 
+        ? `${paste.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${extension}`
+        : `paste_${paste.pasteId}${extension}`;
+      element.download = fileName;
     }
     
-    const file = new Blob([paste.content], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    // Handle null title case
-    const fileName = paste.title 
-      ? `${paste.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${extension}`
-      : `paste_${paste.pasteId}${extension}`;
-    element.download = fileName;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -180,6 +192,9 @@ const ViewPaste = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <h1 className="text-xl font-semibold text-white mb-2 md:mb-0">
                 {paste.title}
+                {paste.isFile && paste.fileName && paste.fileType === 'xml' && (
+                  <Badge className="ml-2 bg-blue-600 text-white">XML File</Badge>
+                )}
               </h1>
               <div className="flex items-center space-x-2">
                 <div className="bg-gray-800 text-gray-400 py-1 px-2 rounded-md text-xs flex items-center">
@@ -219,12 +234,16 @@ const ViewPaste = () => {
                 )}
               </Button>
               <Button 
-                variant="ghost" 
+                variant={paste.isFile && paste.fileType === 'xml' ? "default" : "ghost"}
                 size="sm"
-                className="text-gray-200 hover:text-white transition text-sm flex items-center"
+                className={paste.isFile && paste.fileType === 'xml' 
+                  ? "bg-blue-600 hover:bg-blue-700 text-white transition text-sm flex items-center"
+                  : "text-gray-200 hover:text-white transition text-sm flex items-center"
+                }
                 onClick={downloadPaste}
               >
-                <Download className="h-4 w-4 mr-1" /> Download
+                <Download className="h-4 w-4 mr-1" /> 
+                {paste.isFile && paste.fileType === 'xml' ? 'Download XML' : 'Download'}
               </Button>
               <Button 
                 variant="ghost" 
