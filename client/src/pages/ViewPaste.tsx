@@ -47,7 +47,7 @@ const ViewPaste = () => {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!pasteId) return;
-      return apiRequest(`/api/pastes/${pasteId}`, 'DELETE');
+      return apiRequest('DELETE', `/api/pastes/${pasteId}`);
     },
     onSuccess: () => {
       toast({
