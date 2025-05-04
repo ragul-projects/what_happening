@@ -74,23 +74,6 @@ const Explore = () => {
         </div>
 
         <div>
-          <Card className="bg-gray-800 border-gray-700 mb-6">
-            <CardContent className="p-4">
-              <h3 className="font-medium text-white mb-3">Languages</h3>
-              <div className="space-y-1">
-                {supportedLanguages.map((language) => (
-                  <Link 
-                    key={language.value} 
-                    to={`/language/${language.value}`}
-                    className="block p-2 hover:bg-gray-700 rounded transition text-gray-300 hover:text-white text-sm"
-                  >
-                    {language.name}
-                  </Link>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-4">
               <h3 className="font-medium text-white mb-3">Create New Paste</h3>
