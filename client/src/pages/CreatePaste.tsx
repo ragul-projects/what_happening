@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -14,6 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAdmin } from "@/hooks/use-admin";
 import { apiRequest } from "@/lib/queryClient";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Upload, FileUp } from "lucide-react";
 
 const formSchema = insertPasteSchema.extend({
   expirationMinutes: z.union([z.number().nullable(), z.string()]),
@@ -26,6 +30,9 @@ const CreatePaste = () => {
   const { verifyAdmin } = useAdmin();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("code");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreatePasteFormValues>({
     resolver: zodResolver(formSchema),
@@ -35,9 +42,59 @@ const CreatePaste = () => {
       language: "plaintext",
       expirationMinutes: null,
       authorName: "Anonymous",
-      tags: [],
+      isFile: false,
+      fileName: "",
+      fileType: "",
     },
   });
+
+  // Handle file upload
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Check if it's an XML file
+    if (!file.name.toLowerCase().endsWith('.xml')) {
+      toast({
+        title: "Invalid File",
+        description: "Only XML files are allowed",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSelectedFile(file);
+    
+    // Read file contents
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      
+      form.setValue("content", content);
+      form.setValue("fileName", file.name);
+      form.setValue("fileType", "xml");
+      form.setValue("language", "xml");
+      form.setValue("isFile", true);
+      form.setValue("title", file.name.replace('.xml', ''));
+    };
+    
+    reader.readAsText(file);
+  };
+
+  // Handle file deletion
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    
+    form.setValue("isFile", false);
+    form.setValue("fileName", "");
+    form.setValue("fileType", "");
+    form.setValue("content", "");
+  };
 
   const createPasteMutation = useMutation({
     mutationFn: async (data: CreatePasteFormValues) => {
@@ -47,14 +104,18 @@ const CreatePaste = () => {
     onSuccess: (data) => {
       toast({
         title: "Success!",
-        description: "Your code snippet has been created",
+        description: form.getValues("isFile") 
+          ? "Your file has been uploaded" 
+          : "Your code snippet has been created",
       });
       navigate(`/paste/${data.pasteId}`);
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create paste. Please try again.",
+        description: form.getValues("isFile") 
+          ? "Failed to upload file. Please try again." 
+          : "Failed to create paste. Please try again.",
         variant: "destructive",
       });
       console.error(error);

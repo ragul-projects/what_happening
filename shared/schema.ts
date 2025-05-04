@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, array } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -12,7 +12,9 @@ export const pastes = pgTable("pastes", {
   views: integer("views").default(0).notNull(),
   expiresAt: timestamp("expires_at"),
   authorName: text("author_name").default("Anonymous"),
-  tags: text("tags").array(),
+  isFile: boolean("is_file").default(false),
+  fileName: text("file_name"),
+  fileType: text("file_type"),
 });
 
 export const insertPasteSchema = createInsertSchema(pastes).omit({
@@ -42,6 +44,7 @@ export const supportedLanguages = [
   { name: "Ruby", value: "ruby" },
   { name: "Bash", value: "bash" },
   { name: "SQL", value: "sql" },
+  { name: "XML", value: "xml" },
 ];
 
 export const expirationOptions = [
