@@ -91,6 +91,20 @@ const CreatePaste = () => {
                             placeholder="Title for your paste (optional)"
                             className="bg-gray-700 border-gray-600 text-gray-200"
                             {...field}
+                            onFocus={async (e) => {
+                              // Only verify if there's already content
+                              if (!field.value) return;
+                              
+                              const isAdmin = await verifyAdmin();
+                              if (!isAdmin) {
+                                e.target.blur();
+                                toast({
+                                  title: "Access Denied",
+                                  description: "Only admins can modify content in text fields",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -108,6 +122,20 @@ const CreatePaste = () => {
                             placeholder="Your name (optional)"
                             className="bg-gray-700 border-gray-600 text-gray-200"
                             {...field}
+                            onFocus={async (e) => {
+                              // Only verify if there's already content
+                              if (!field.value) return;
+                              
+                              const isAdmin = await verifyAdmin();
+                              if (!isAdmin) {
+                                e.target.blur();
+                                toast({
+                                  title: "Access Denied",
+                                  description: "Only admins can modify content in text fields",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
                           />
                         </FormControl>
                         <FormMessage />

@@ -43,10 +43,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   // This function is used to prompt for admin authentication when needed
   const verifyAdmin = async (): Promise<boolean> => {
-    // If already logged in as admin, return true
-    if (isAdmin) return true;
-    
-    // Ask for password
+    // Always ask for password each time editing is attempted
     const password = prompt('Admin password required to edit content:');
     
     // If password is null (user clicked cancel) or empty, return false
