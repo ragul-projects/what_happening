@@ -171,16 +171,45 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log(`[storage] Updating paste with ID ${id}, content length: ${content.length}`);
       
-      // Generate SQL log
-      const query = db.update(schema.pastes)
+      // First verify the paste exists
+      const [existingPaste] = await db.select()
+        .from(schema.pastes)
+        .where(eq(schema.pastes.id, id))
+        .limit(1);
+      
+      if (!existingPaste) {
+        console.error(`[storage] Cannot update paste with ID ${id} - not found`);
+        return false;
+      }
+      
+      console.log(`[storage] Found existing paste with ID ${id}:`, existingPaste.paste_id);
+      
+      // Perform the update
+      const result = await db.update(schema.pastes)
         .set({ content })
         .where(eq(schema.pastes.id, id))
-        .returning({ id: schema.pastes.id });
-      
-      const result = await query;
+        .returning();
       
       console.log(`[storage] Update result:`, result);
-      return result.length > 0;
+      
+      if (result.length > 0) {
+        // Verify the update succeeded by fetching the current data
+        const [verifiedPaste] = await db.select()
+          .from(schema.pastes)
+          .where(eq(schema.pastes.id, id))
+          .limit(1);
+          
+        console.log(`[storage] Verified updated paste:`, {
+          id: verifiedPaste.id,
+          pasteId: verifiedPaste.paste_id,
+          contentLength: verifiedPaste.content.length,
+          contentPreview: verifiedPaste.content.substring(0, 30)
+        });
+        
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error("[storage] Error in updatePaste:", error);
       return false;

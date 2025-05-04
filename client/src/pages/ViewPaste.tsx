@@ -120,8 +120,13 @@ export default function ViewPaste() {
         duration: 3000,
       });
       setIsEditing(false);
-      // Invalidate the query to refetch the updated paste
-      queryClient.invalidateQueries({ queryKey: [`/api/pastes/${pasteId}`] });
+      
+      // Force a complete refetch by refetching the paste directly
+      console.log("Force refetching paste data");
+      queryClient.removeQueries({ queryKey: [`/api/pastes/${pasteId}`] });
+      
+      // Reload the page to ensure we get fresh data
+      window.location.reload();
     },
     onError: (error: any) => {
       console.error("Update error:", error);
