@@ -10,6 +10,7 @@ import LanguagePage from "@/pages/LanguagePage";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
+import { AdminProvider } from "@/hooks/use-admin";
 
 function Router() {
   return (
@@ -28,15 +29,17 @@ function Router() {
 function App() {
   return (
     <TooltipProvider>
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-grow">
-          <Router />
-        </main>
-        <Footer />
-        <CookieConsent />
-      </div>
-      <Toaster />
+      <AdminProvider>
+        <div className="min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-grow">
+            <Router />
+          </main>
+          <Footer />
+          <CookieConsent />
+        </div>
+        <Toaster />
+      </AdminProvider>
     </TooltipProvider>
   );
 }

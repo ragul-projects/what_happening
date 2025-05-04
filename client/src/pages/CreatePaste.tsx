@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAdmin } from "@/hooks/use-admin";
 import { apiRequest } from "@/lib/queryClient";
 
 const formSchema = insertPasteSchema.extend({
@@ -22,6 +23,7 @@ type CreatePasteFormValues = z.infer<typeof formSchema>;
 
 const CreatePaste = () => {
   const { toast } = useToast();
+  const { verifyAdmin } = useAdmin();
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -125,6 +127,26 @@ const CreatePaste = () => {
                           placeholder="Paste your code here..."
                           className="min-h-[300px] font-mono text-sm bg-gray-700 border-gray-600 text-gray-200"
                           {...field}
+                          onChange={async (e) => {
+                            // Only proceed with change if admin password is provided and correct
+                            if (field.value && e.target.value !== field.value) {
+                              const isAdmin = await verifyAdmin();
+                              if (isAdmin) {
+                                field.onChange(e);
+                              } else {
+                                // Reset to previous value if not admin
+                                e.target.value = field.value;
+                                toast({
+                                  title: "Access Denied",
+                                  description: "Only admins can modify content in text boxes",
+                                  variant: "destructive",
+                                });
+                              }
+                            } else {
+                              // Initial input (when field is empty) doesn't require validation
+                              field.onChange(e);
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
