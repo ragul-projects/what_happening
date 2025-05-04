@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import CodeBlock from "@/components/CodeBlock";
 import { 
@@ -41,9 +41,21 @@ const ViewPaste = () => {
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
   
+  // Use the error handling effect first to maintain consistent hooks order
   const { data: paste, isLoading, error } = useQuery<Paste>({
     queryKey: [`/api/pastes/${pasteId}`],
   });
+  
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "This paste doesn't exist or has expired",
+        variant: "destructive",
+      });
+      navigate("/");
+    }
+  }, [error, navigate, toast]);
   
   const { data: relatedPastes = [] } = useQuery<Paste[]>({
     queryKey: [`/api/pastes/${pasteId}/related`],
@@ -109,17 +121,6 @@ const ViewPaste = () => {
       deleteMutation.mutate();
     }
   };
-
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error",
-        description: "This paste doesn't exist or has expired",
-        variant: "destructive",
-      });
-      navigate("/");
-    }
-  }, [error, navigate, toast]);
 
   const copyToClipboard = async () => {
     if (!paste) return;
@@ -214,13 +215,14 @@ const ViewPaste = () => {
     );
   }
 
-  // Set up the edited content when entering edit mode
-  useEffect(() => {
-    if (paste && isEditing) {
+  // Use a callback for handling edit mode
+  const handleEditMode = useCallback(() => {
+    if (paste) {
       setEditedContent(paste.content);
+      setIsEditing(true);
     }
-  }, [isEditing, paste]);
-
+  }, [paste]);
+  
   if (!paste) return null;
 
   return (
@@ -339,7 +341,7 @@ const ViewPaste = () => {
                   variant="ghost" 
                   size="sm"
                   className="text-blue-400 hover:text-blue-300 transition text-sm flex items-center"
-                  onClick={() => setIsEditing(true)}
+                  onClick={handleEditMode}
                 >
                   <Edit className="h-4 w-4 mr-1" /> Edit
                 </Button>
