@@ -214,14 +214,14 @@ const ViewPaste = () => {
     );
   }
 
-  if (!paste) return null;
-
   // Set up the edited content when entering edit mode
   useEffect(() => {
     if (paste && isEditing) {
       setEditedContent(paste.content);
     }
   }, [isEditing, paste]);
+
+  if (!paste) return null;
 
   return (
     <div className="container mx-auto px-4 py-6">
