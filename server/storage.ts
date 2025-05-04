@@ -1,6 +1,8 @@
 import { nanoid } from "nanoid";
 import { pastes, type Paste, type InsertPaste } from "@shared/schema";
 import { add } from "date-fns";
+import { db } from "./db";
+import { eq, asc, desc, ne, isNotNull, isNull, and, or, sql } from "drizzle-orm";
 
 export interface IStorage {
   createPaste(paste: Omit<Paste, "id" | "views" | "createdAt"> & { pasteId: string }): Promise<Paste>;
@@ -12,95 +14,110 @@ export interface IStorage {
   deletePaste(id: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private pastes: Map<number, Paste>;
-  private pasteIdIndex: Map<string, number>;
-  currentId: number;
-
-  constructor() {
-    this.pastes = new Map();
-    this.pasteIdIndex = new Map();
-    this.currentId = 1;
-    
-    // Add some initial pastes for testing
-    this.createInitialPastes();
-  }
-
+export class DatabaseStorage implements IStorage {
   async createPaste(pasteData: Omit<Paste, "id" | "views" | "createdAt"> & { pasteId: string }): Promise<Paste> {
-    const id = this.currentId++;
-    const createdAt = new Date();
-    const views = 0;
-    
-    const paste: Paste = { 
-      id, 
-      pasteId: pasteData.pasteId,
-      title: pasteData.title || "Untitled",
-      content: pasteData.content,
-      language: pasteData.language || "plaintext",
-      createdAt,
-      views,
-      expiresAt: pasteData.expiresAt,
-      authorName: pasteData.authorName || "Anonymous",
-      tags: pasteData.tags || [],
-    };
-    
-    this.pastes.set(id, paste);
-    this.pasteIdIndex.set(paste.pasteId, id);
+    const [paste] = await db
+      .insert(pastes)
+      .values({
+        pasteId: pasteData.pasteId,
+        title: pasteData.title || "Untitled",
+        content: pasteData.content,
+        language: pasteData.language || "plaintext",
+        expiresAt: pasteData.expiresAt,
+        authorName: pasteData.authorName || "Anonymous",
+        tags: pasteData.tags || [],
+      })
+      .returning();
     
     return paste;
   }
 
   async getPasteById(id: number): Promise<Paste | undefined> {
-    return this.pastes.get(id);
+    const currentDate = new Date();
+    
+    const [paste] = await db
+      .select()
+      .from(pastes)
+      .where(and(
+        eq(pastes.id, id),
+        or(
+          isNull(pastes.expiresAt),
+          sql`${pastes.expiresAt} > ${currentDate}`
+        )
+      ));
+    
+    return paste;
   }
 
   async getPasteByPasteId(pasteId: string): Promise<Paste | undefined> {
-    const id = this.pasteIdIndex.get(pasteId);
-    if (id === undefined) return undefined;
-    return this.pastes.get(id);
+    const currentDate = new Date();
+    
+    const [paste] = await db
+      .select()
+      .from(pastes)
+      .where(and(
+        eq(pastes.pasteId, pasteId),
+        or(
+          isNull(pastes.expiresAt),
+          sql`${pastes.expiresAt} > ${currentDate}`
+        )
+      ));
+    
+    return paste;
   }
 
   async incrementViews(id: number): Promise<void> {
-    const paste = this.pastes.get(id);
-    if (paste) {
-      paste.views += 1;
-      this.pastes.set(id, paste);
-    }
+    await db
+      .update(pastes)
+      .set({ views: sql`${pastes.views} + 1` })
+      .where(eq(pastes.id, id));
   }
 
   async getRecentPastes(limit: number = 5): Promise<Paste[]> {
-    // Get all pastes, check for expiration, sort by creation date, and limit
-    const pastes = Array.from(this.pastes.values())
-      .filter(paste => !paste.expiresAt || new Date(paste.expiresAt) > new Date())
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, limit);
+    const currentDate = new Date();
     
-    return pastes;
+    const recentPastes = await db
+      .select()
+      .from(pastes)
+      .where(or(
+        isNull(pastes.expiresAt),
+        sql`${pastes.expiresAt} > ${currentDate}`
+      ))
+      .orderBy(desc(pastes.createdAt))
+      .limit(limit);
+    
+    return recentPastes;
   }
 
   async getRelatedPastes(language: string, excludeId?: number, limit: number = 3): Promise<Paste[]> {
-    // Get pastes with the same language, excluding the given ID
-    const pastes = Array.from(this.pastes.values())
-      .filter(paste => 
-        paste.language === language && 
-        (!excludeId || paste.id !== excludeId) && 
-        (!paste.expiresAt || new Date(paste.expiresAt) > new Date())
-      )
-      .sort((a, b) => b.views - a.views) // Sort by views
-      .slice(0, limit);
+    const currentDate = new Date();
     
-    return pastes;
+    const query = db
+      .select()
+      .from(pastes)
+      .where(and(
+        eq(pastes.language, language),
+        or(
+          isNull(pastes.expiresAt),
+          sql`${pastes.expiresAt} > ${currentDate}`
+        ),
+        excludeId ? ne(pastes.id, excludeId) : undefined
+      ))
+      .orderBy(desc(pastes.views))
+      .limit(limit);
+    
+    const relatedPastes = await query;
+    
+    return relatedPastes;
   }
 
   async deletePaste(id: number): Promise<void> {
-    const paste = this.pastes.get(id);
-    if (paste) {
-      this.pasteIdIndex.delete(paste.pasteId);
-      this.pastes.delete(id);
-    }
+    await db
+      .delete(pastes)
+      .where(eq(pastes.id, id));
   }
 
-  private async createInitialPastes() {
+  async createInitialPastes() {
     // Python example
     const pythonPaste = {
       pasteId: nanoid(8),
@@ -312,7 +329,6 @@ print(f"Accuracy: {mean_accuracy:.2f}")`,
       authorName: "Anonymous",
       tags: ["python", "pandas", "data-analysis", "scikit-learn", "machine-learning", "statistics"],
       views: 147,
-      createdAt: new Date("2023-04-19"),
       expiresAt: null,
     };
     
@@ -324,4 +340,5 @@ print(f"Accuracy: {mean_accuracy:.2f}")`,
   }
 }
 
-export const storage = new MemStorage();
+// Initialize the storage
+export const storage = new DatabaseStorage();

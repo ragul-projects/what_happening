@@ -6,7 +6,29 @@ import { z } from "zod";
 import { insertPasteSchema, supportedLanguages } from "@shared/schema";
 import { add } from "date-fns";
 
+// Initialize database with example pastes if needed
+async function initializeDatabase() {
+  try {
+    // Check if we have any pastes in the database
+    const existingPastes = await storage.getRecentPastes(1);
+    
+    // If no pastes exist, create some examples
+    if (existingPastes.length === 0) {
+      console.log('[express] Initializing database with example pastes...');
+      
+      // Use the createInitialPastes method from the DatabaseStorage class
+      await (storage as any).createInitialPastes();
+      
+      console.log('[express] Database initialized with example pastes');
+    }
+  } catch (error) {
+    console.error('[express] Error initializing database:', error);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize database with example pastes
+  await initializeDatabase();
   // Create a new paste
   app.post("/api/pastes", async (req, res) => {
     try {
