@@ -113,10 +113,10 @@ const ViewPaste = () => {
     
     const element = document.createElement('a');
     
-    // Check if this is a file (particularly Excel)
-    if (paste.isFile && paste.fileName && paste.fileType === 'excel') {
-      // For Excel files, use the original filename if available
-      const file = new Blob([paste.content], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    // Check if this is a file (particularly CSV)
+    if (paste.isFile && paste.fileName && paste.fileType === 'csv') {
+      // For CSV files, use the original filename if available
+      const file = new Blob([paste.content], { type: 'text/csv' });
       element.href = URL.createObjectURL(file);
       element.download = paste.fileName;
     } else {
@@ -192,8 +192,8 @@ const ViewPaste = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <h1 className="text-xl font-semibold text-white mb-2 md:mb-0">
                 {paste.title}
-                {paste.isFile && paste.fileName && paste.fileType === 'excel' && (
-                  <Badge className="ml-2 bg-blue-600 text-white">Excel File</Badge>
+                {paste.isFile && paste.fileName && paste.fileType === 'csv' && (
+                  <Badge className="ml-2 bg-blue-600 text-white">CSV File</Badge>
                 )}
               </h1>
               <div className="flex items-center space-x-2">
