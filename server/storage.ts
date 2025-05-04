@@ -16,82 +16,201 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async createPaste(pasteData: Omit<Paste, "id" | "views" | "createdAt"> & { pasteId: string }): Promise<Paste> {
-    const [paste] = await db
-      .insert(pastes)
-      .values({
-        pasteId: pasteData.pasteId,
-        title: pasteData.title || "Untitled",
-        content: pasteData.content,
-        language: pasteData.language || "plaintext",
-        expiresAt: pasteData.expiresAt,
-        authorName: pasteData.authorName || "Anonymous",
-        isFile: pasteData.isFile || false,
-        fileName: pasteData.fileName || null,
-        fileType: pasteData.fileType || null,
-      })
-      .returning();
-    
-    return paste;
+    try {
+      // Use direct SQL to avoid column name issues
+      const result = await db.execute(sql`
+        INSERT INTO pastes (
+          paste_id, 
+          title, 
+          content, 
+          language, 
+          expires_at, 
+          author_name, 
+          is_file, 
+          file_name, 
+          file_type
+        ) 
+        VALUES (
+          ${pasteData.pasteId},
+          ${pasteData.title || "Untitled"},
+          ${pasteData.content},
+          ${pasteData.language || "plaintext"},
+          ${pasteData.expiresAt},
+          ${pasteData.authorName || "Anonymous"},
+          ${pasteData.isFile || false},
+          ${pasteData.fileName || null},
+          ${pasteData.fileType || null}
+        )
+        RETURNING 
+          id, paste_id, title, content, language, 
+          created_at, views, expires_at, author_name, 
+          tags, is_file, file_name, file_type
+      `);
+      
+      // Type casting to handle TypeScript errors
+      const rows = result as any[];
+      
+      if (!rows || rows.length === 0) {
+        throw new Error("Failed to create paste: No rows returned");
+      }
+      
+      // Map the result to a Paste object
+      const paste = rows[0];
+      
+      return {
+        id: paste.id,
+        pasteId: paste.paste_id,
+        title: paste.title,
+        content: paste.content,
+        language: paste.language,
+        createdAt: paste.created_at,
+        views: paste.views,
+        expiresAt: paste.expires_at,
+        authorName: paste.author_name,
+        tags: paste.tags,
+        isFile: paste.is_file,
+        fileName: paste.file_name,
+        fileType: paste.file_type
+      } as Paste;
+    } catch (error) {
+      console.error("Error in createPaste:", error);
+      throw error;
+    }
   }
 
   async getPasteById(id: number): Promise<Paste | undefined> {
     const currentDate = new Date();
     
-    const [paste] = await db
-      .select()
-      .from(pastes)
-      .where(and(
-        eq(pastes.id, id),
-        or(
-          isNull(pastes.expiresAt),
-          sql`${pastes.expiresAt} > ${currentDate}`
-        )
-      ));
-    
-    return paste;
+    try {
+      const result = await db.execute(sql`
+        SELECT 
+          id, paste_id, title, content, language, 
+          created_at, views, expires_at, author_name, 
+          tags, is_file, file_name, file_type
+        FROM pastes
+        WHERE id = ${id} AND (expires_at IS NULL OR expires_at > ${currentDate})
+      `);
+      
+      // Type casting to handle TypeScript errors
+      const rows = result as any[];
+      
+      if (!rows || rows.length === 0) {
+        return undefined;
+      }
+      
+      const row = rows[0];
+      return {
+        id: row.id,
+        pasteId: row.paste_id,
+        title: row.title,
+        content: row.content,
+        language: row.language,
+        createdAt: row.created_at,
+        views: row.views,
+        expiresAt: row.expires_at,
+        authorName: row.author_name,
+        tags: row.tags,
+        isFile: row.is_file,
+        fileName: row.file_name,
+        fileType: row.file_type
+      } as Paste;
+    } catch (error) {
+      console.error("[storage] Error in getPasteById:", error);
+      return undefined;
+    }
   }
 
   async getPasteByPasteId(pasteId: string): Promise<Paste | undefined> {
     const currentDate = new Date();
     
-    const [paste] = await db
-      .select()
-      .from(pastes)
-      .where(and(
-        eq(pastes.pasteId, pasteId),
-        or(
-          isNull(pastes.expiresAt),
-          sql`${pastes.expiresAt} > ${currentDate}`
-        )
-      ));
-    
-    return paste;
+    try {
+      const result = await db.execute(sql`
+        SELECT 
+          id, paste_id, title, content, language, 
+          created_at, views, expires_at, author_name, 
+          tags, is_file, file_name, file_type
+        FROM pastes
+        WHERE paste_id = ${pasteId} AND (expires_at IS NULL OR expires_at > ${currentDate})
+      `);
+      
+      // Type casting to handle TypeScript errors
+      const rows = result as any[];
+      
+      if (!rows || rows.length === 0) {
+        return undefined;
+      }
+      
+      const row = rows[0];
+      return {
+        id: row.id,
+        pasteId: row.paste_id,
+        title: row.title,
+        content: row.content,
+        language: row.language,
+        createdAt: row.created_at,
+        views: row.views,
+        expiresAt: row.expires_at,
+        authorName: row.author_name,
+        tags: row.tags,
+        isFile: row.is_file,
+        fileName: row.file_name,
+        fileType: row.file_type
+      } as Paste;
+    } catch (error) {
+      console.error("[storage] Error in getPasteByPasteId:", error);
+      return undefined;
+    }
   }
 
   async incrementViews(id: number): Promise<void> {
-    await db
-      .update(pastes)
-      .set({ views: sql`${pastes.views} + 1` })
-      .where(eq(pastes.id, id));
+    try {
+      await db.execute(sql`
+        UPDATE pastes 
+        SET views = views + 1 
+        WHERE id = ${id}
+      `);
+    } catch (error) {
+      console.error("[storage] Error in incrementViews:", error);
+    }
   }
 
   async getRecentPastes(limit: number = 5): Promise<Paste[]> {
     const currentDate = new Date();
     
     try {
-      // Include all columns including file-related ones
-      const recentPastes = await db
-        .select()
-        .from(pastes)
-        .where(or(
-          isNull(pastes.expiresAt),
-          sql`${pastes.expiresAt} > ${currentDate}`
-        ))
-        .orderBy(desc(pastes.createdAt))
-        .limit(limit);
+      // Use direct SQL to avoid column name issues
+      const result = await db.execute(sql`
+        SELECT 
+          id, paste_id, title, content, language, 
+          created_at, views, expires_at, author_name, 
+          tags, is_file, file_name, file_type
+        FROM pastes
+        WHERE expires_at IS NULL OR expires_at > ${currentDate}
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+      `);
       
-      console.log("[storage] Successfully fetched recent pastes:", recentPastes.length);
-      return recentPastes;
+      // Type casting to handle TypeScript errors
+      const rows = result as any[];
+      
+      console.log("[storage] Successfully fetched recent pastes:", rows.length);
+      
+      // Map the results to Paste objects
+      return rows.map(row => ({
+        id: row.id,
+        pasteId: row.paste_id,
+        title: row.title,
+        content: row.content,
+        language: row.language,
+        createdAt: row.created_at,
+        views: row.views,
+        expiresAt: row.expires_at,
+        authorName: row.author_name,
+        tags: row.tags,
+        isFile: row.is_file,
+        fileName: row.file_name,
+        fileType: row.file_type
+      } as Paste));
     } catch (error) {
       console.error("[storage] Error in getRecentPastes:", error);
       // Return empty array to avoid breaking the application
@@ -103,23 +222,40 @@ export class DatabaseStorage implements IStorage {
     const currentDate = new Date();
     
     try {
-      // Include all columns including file-related ones
-      const relatedPastes = await db
-        .select()
-        .from(pastes)
-        .where(and(
-          eq(pastes.language, language),
-          or(
-            isNull(pastes.expiresAt),
-            sql`${pastes.expiresAt} > ${currentDate}`
-          ),
-          excludeId ? ne(pastes.id, excludeId) : undefined
-        ))
-        .orderBy(desc(pastes.views))
-        .limit(limit);
+      // Use direct SQL to avoid column name issues
+      const whereClause = excludeId 
+        ? sql`language = ${language} AND (expires_at IS NULL OR expires_at > ${currentDate}) AND id != ${excludeId}`
+        : sql`language = ${language} AND (expires_at IS NULL OR expires_at > ${currentDate})`;
       
-      console.log("[storage] Successfully fetched related pastes:", relatedPastes.length);
-      return relatedPastes;
+      const result = await db.execute(sql`
+        SELECT 
+          id, paste_id, title, content, language, 
+          created_at, views, expires_at, author_name, 
+          tags, is_file, file_name, file_type
+        FROM pastes
+        WHERE ${whereClause}
+        ORDER BY views DESC
+        LIMIT ${limit}
+      `);
+      
+      console.log("[storage] Successfully fetched related pastes:", result.length);
+      
+      // Map the results to Paste objects
+      return result.map(row => ({
+        id: row.id,
+        pasteId: row.paste_id,
+        title: row.title,
+        content: row.content,
+        language: row.language,
+        createdAt: row.created_at,
+        views: row.views,
+        expiresAt: row.expires_at,
+        authorName: row.author_name,
+        tags: row.tags,
+        isFile: row.is_file,
+        fileName: row.file_name,
+        fileType: row.file_type
+      } as Paste));
     } catch (error) {
       console.error("[storage] Error in getRelatedPastes:", error);
       return [];
@@ -127,9 +263,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePaste(id: number): Promise<void> {
-    await db
-      .delete(pastes)
-      .where(eq(pastes.id, id));
+    try {
+      await db.execute(sql`
+        DELETE FROM pastes 
+        WHERE id = ${id}
+      `);
+    } catch (error) {
+      console.error("[storage] Error in deletePaste:", error);
+    }
   }
 
   async createInitialPastes() {
