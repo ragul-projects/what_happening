@@ -55,11 +55,11 @@ const CreatePaste = () => {
     
     const file = files[0];
     
-    // Check if it's an XML file
-    if (!file.name.toLowerCase().endsWith('.xml')) {
+    // Check if it's an Excel file
+    if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
       toast({
         title: "Invalid File",
-        description: "Only XML files are allowed",
+        description: "Only Excel files (.xlsx, .xls) are allowed",
         variant: "destructive",
       });
       return;
@@ -74,10 +74,10 @@ const CreatePaste = () => {
       
       form.setValue("content", content);
       form.setValue("fileName", file.name);
-      form.setValue("fileType", "xml");
-      form.setValue("language", "xml");
+      form.setValue("fileType", "excel");
+      form.setValue("language", "plaintext"); // Excel content won't need syntax highlighting
       form.setValue("isFile", true);
-      form.setValue("title", file.name.replace('.xml', ''));
+      form.setValue("title", file.name.replace(/\.(xlsx|xls)$/i, ''));
     };
     
     reader.readAsText(file);
@@ -141,7 +141,7 @@ const CreatePaste = () => {
             <Tabs defaultValue="code" onValueChange={setActiveTab} value={activeTab}>
               <TabsList className="mb-6 bg-gray-700">
                 <TabsTrigger value="code" className="data-[state=active]:bg-blue-600">Code Paste</TabsTrigger>
-                <TabsTrigger value="file" className="data-[state=active]:bg-blue-600">XML File Upload</TabsTrigger>
+                <TabsTrigger value="file" className="data-[state=active]:bg-blue-600">Excel File Upload</TabsTrigger>
               </TabsList>
               
               <Form {...form}>
@@ -284,7 +284,7 @@ const CreatePaste = () => {
                                           e.target.blur();
                                           toast({
                                             title: "Access Denied",
-                                            description: "Only admins can modify XML file content",
+                                            description: "Only admins can modify Excel file content",
                                             variant: "destructive",
                                           });
                                         }
@@ -311,12 +311,12 @@ const CreatePaste = () => {
                           <div className="space-y-4">
                             <Upload className="h-12 w-12 text-gray-400 mx-auto" />
                             <div>
-                              <p className="text-gray-200 font-medium">Drop your XML file here or click to browse</p>
-                              <p className="text-gray-400 mt-1 text-sm">XML files only (.xml)</p>
+                              <p className="text-gray-200 font-medium">Drop your Excel file here or click to browse</p>
+                              <p className="text-gray-400 mt-1 text-sm">Excel files only (.xlsx, .xls)</p>
                             </div>
                             <input
                               type="file"
-                              accept=".xml"
+                              accept=".xlsx,.xls"
                               ref={fileInputRef}
                               onChange={handleFileChange}
                               className="hidden"
@@ -351,13 +351,13 @@ const CreatePaste = () => {
                                     }}
                                   />
                                 </FormControl>
-                                <Label className="text-gray-200">Save as downloadable XML file</Label>
+                                <Label className="text-gray-200">Save as downloadable Excel file</Label>
                               </FormItem>
                             )}
                           />
                         </div>
                         <p className="text-gray-400 mt-1 text-xs">
-                          When enabled, users will be able to download this as an XML file. Only admins can edit XML files.
+                          When enabled, users will be able to download this as an Excel file. Only admins can edit Excel files.
                         </p>
                       </div>
                     </div>
@@ -428,7 +428,7 @@ const CreatePaste = () => {
                       className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? "Creating..." : activeTab === "file" ? "Upload XML File" : "Create Paste"}
+                      {isSubmitting ? "Creating..." : activeTab === "file" ? "Upload Excel File" : "Create Paste"}
                     </Button>
                   </div>
                 </form>
