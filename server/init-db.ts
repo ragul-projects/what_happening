@@ -18,7 +18,10 @@ async function initializeDatabase() {
         views INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
         expires_at TIMESTAMP WITH TIME ZONE,
-        tags TEXT[]
+        tags TEXT[],
+        is_file BOOLEAN DEFAULT FALSE,
+        file_name TEXT,
+        file_type TEXT
       )
     `);
     
