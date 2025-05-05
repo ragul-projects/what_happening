@@ -2,24 +2,30 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
+import { env } from "./config";
 
 neonConfig.webSocketConstructor = ws;
 
-// Use the provided Neon DB URL
-const databaseUrl = "postgresql://neondb_owner:npg_SbHyI6cdZnU5@ep-wispy-cloud-a4f57e4w-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require";
-
-if (!databaseUrl) {
-  throw new Error(
-    "Database connection URL must be set. Did you forget to provision a database?",
-  );
-}
-
 console.log("Connecting to Neon database...");
-export const pool = new Pool({ connectionString: databaseUrl });
+
+let pool: Pool;
+try {
+  pool = new Pool({ connectionString: env.databaseUrl });
+  
+  // Test the connection
+  pool.connect().then(() => {
+    console.log("Successfully connected to the database");
+  }).catch((error) => {
+    console.error("Failed to connect to the database:", error);
+  });
+} catch (error) {
+  console.error("Error initializing database pool:", error);
+  throw new Error("Failed to initialize database connection");
+}
 
 // Debug queries
 const logQuery = (query: string, params: any[]) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (env.nodeEnv === 'development') {
     console.log('SQL Query:', query);
     console.log('Parameters:', params);
   }

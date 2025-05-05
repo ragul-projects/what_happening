@@ -1,0 +1,1 @@
+web: cd functions && npm start 

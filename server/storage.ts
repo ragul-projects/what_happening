@@ -172,50 +172,28 @@ export class DatabaseStorage implements IStorage {
       console.log(`[storage] Updating paste with ID ${id}, content length: ${content.length}`);
       
       // First verify the paste exists
-      const [existingPaste] = await db.select()
-        .from(schema.pastes)
-        .where(eq(schema.pastes.id, id))
-        .limit(1);
+      const existingPaste = await db.query.pastes.findFirst({
+        where: eq(schema.pastes.id, id)
+      });
       
       if (!existingPaste) {
         console.error(`[storage] Cannot update paste with ID ${id} - not found`);
         return false;
       }
       
-      // In database it's paste_id but in the application it's pasteId
-      const pasteIdValue = 'paste_id' in existingPaste 
-        ? (existingPaste as any).paste_id 
-        : existingPaste.pasteId;
-      
-      console.log(`[storage] Found existing paste with ID ${id}:`, pasteIdValue);
-      
-      // Perform the update
-      const result = await db.update(schema.pastes)
+      // Perform the update using Drizzle ORM
+      const [updatedPaste] = await db.update(schema.pastes)
         .set({ content })
         .where(eq(schema.pastes.id, id))
         .returning();
       
-      console.log(`[storage] Update result:`, result);
-      
-      if (result.length > 0) {
-        // Verify the update succeeded by fetching the current data
-        const [verifiedPaste] = await db.select()
-          .from(schema.pastes)
-          .where(eq(schema.pastes.id, id))
-          .limit(1);
-          
-        // In database it's paste_id but we need to handle both formats
-        const verifiedPasteId = 'paste_id' in verifiedPaste 
-          ? (verifiedPaste as any).paste_id 
-          : verifiedPaste.pasteId;
-        
-        console.log(`[storage] Verified updated paste:`, {
-          id: verifiedPaste.id,
-          pasteId: verifiedPasteId,
-          contentLength: verifiedPaste.content.length,
-          contentPreview: verifiedPaste.content.substring(0, 30)
+      if (updatedPaste) {
+        console.log(`[storage] Successfully updated paste:`, {
+          id: updatedPaste.id,
+          pasteId: updatedPaste.pasteId,
+          contentLength: updatedPaste.content.length,
+          contentPreview: updatedPaste.content.substring(0, 30)
         });
-        
         return true;
       }
       

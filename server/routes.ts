@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { insertPasteSchema, supportedLanguages } from "@shared/schema";
 import { add } from "date-fns";
+import { env } from "./config";
 
 // Initialize database with example pastes if needed
 async function initializeDatabase() {
@@ -133,9 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { adminPassword } = req.body;
       
       // Verify admin password
-      const actualAdminPassword = process.env.ADMIN_PASSWORD;
-      
-      if (!actualAdminPassword || adminPassword !== actualAdminPassword) {
+      if (adminPassword !== env.adminPassword) {
         return res.status(403).json({ message: "Unauthorized: Admin access required" });
       }
       
@@ -162,15 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "Password is required" });
       }
       
-      // Check against environment variable
-      const adminPassword = process.env.ADMIN_PASSWORD;
-      
-      if (!adminPassword) {
-        console.error("ADMIN_PASSWORD environment variable is not set");
-        return res.status(500).json({ success: false, message: "Server configuration error" });
-      }
-      
-      const isAuthenticated = password === adminPassword;
+      const isAuthenticated = password === env.adminPassword;
       
       return res.json({ 
         success: isAuthenticated,
@@ -188,12 +179,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { pasteId } = req.params;
       const { content, adminPassword } = req.body;
       
-      console.log(`Updating paste ${pasteId} with content: ${content.substring(0, 30)}...`);
+      if (!content) {
+        return res.status(400).json({ message: "Content is required" });
+      }
+      
+      console.log(`Updating paste ${pasteId} with content length: ${content.length}`);
       
       // Verify admin password
-      const actualAdminPassword = process.env.ADMIN_PASSWORD;
-      
-      if (!actualAdminPassword || adminPassword !== actualAdminPassword) {
+      if (adminPassword !== env.adminPassword) {
         console.log("Authentication failed - wrong password");
         return res.status(403).json({ message: "Unauthorized: Admin access required" });
       }
@@ -206,29 +199,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Paste not found" });
       }
       
-      console.log(`Found paste with id: ${paste.id}, updating content...`);
-      
       // Update the paste content
       const success = await storage.updatePaste(paste.id, content);
       
       if (success) {
-        console.log("Update successful");
-        
         // Get the updated paste to return to the client
         const updatedPaste = await storage.getPasteByPasteId(pasteId);
         if (updatedPaste) {
-          console.log("Returning updated paste with new content");
+          const { id, ...pasteData } = updatedPaste;
           return res.json({
             message: "Paste updated successfully",
-            paste: updatedPaste
+            paste: pasteData
           });
-        } else {
-          return res.json({ message: "Paste updated successfully" });
         }
-      } else {
-        console.log("Update failed");
-        return res.status(500).json({ message: "Failed to update paste" });
       }
+      
+      return res.status(500).json({ message: "Failed to update paste" });
     } catch (error) {
       console.error("Error updating paste:", error);
       res.status(500).json({ message: "Error updating paste" });
